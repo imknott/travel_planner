@@ -1,4 +1,4 @@
-import redis from './redis.js'; // ✅ Must include extension
+import redis from './redis'; 
 import crypto from 'crypto';
 
 function hash(text) {

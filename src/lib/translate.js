@@ -1,4 +1,4 @@
-import redis from './redis.js';
+import redis from './redis';
 import crypto from 'crypto';
 
 const endpoint = 'http://localhost:32768';
