@@ -1,6 +1,7 @@
-'use client';
+'use client'
 
 import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { translations } from '@/lib/translations';
 import ThemeToggle from '@/components/themeToggle';
 import Link from 'next/link';
@@ -8,6 +9,8 @@ import Link from 'next/link';
 export default function Navbar() {
   const [lang, setLang] = useState('en');
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
   const t = translations[lang] || translations['en'];
 
   useEffect(() => {
@@ -18,6 +21,11 @@ export default function Navbar() {
   }, []);
 
   const handleLangChange = (value) => {
+    const segments = pathname.split('/');
+    segments[1] = value; // replace /[locale]
+    const newPath = segments.join('/');
+    router.push(newPath);
+
     setLang(value);
     localStorage.setItem('flighthacked_lang', value);
   };
@@ -25,16 +33,13 @@ export default function Navbar() {
   return (
     <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm fixed top-0 left-0 w-full z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo and Home Link */}
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href={`/${lang}`} className="flex items-center space-x-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8" />
           <span className="text-xl font-bold text-[#007BFF]">flighthacked.com</span>
         </Link>
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-
-          {/* Language Dropdown */}
           <select
             className="text-sm px-2 py-1 rounded border bg-white dark:bg-slate-800 dark:text-white text-black"
             value={lang}
@@ -52,8 +57,6 @@ export default function Navbar() {
             <option value="de">Deutsch</option>
           </select>
 
-          {/* Mobile Toggle (if you plan to use it for other links later) */}
-          {/* You can remove this too if no other nav items */}
           <button
             className="sm:hidden text-gray-700 dark:text-white"
             onClick={() => setMenuOpen(!menuOpen)}

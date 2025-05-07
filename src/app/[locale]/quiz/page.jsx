@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { quizTranslations } from '@/lib/quiz_translations';
+import { quizTranslations } from '@/lib/quizTranslations';
 import { promptTemplates } from '@/lib/promptTemplates';
 import GoogleAds from '@/components/googleAds';
+import { useLanguage } from '@/context/LanguageContext';
+
 
 const optionBackgrounds = {
   Europe: '/images/europe.jpg',
@@ -45,7 +47,7 @@ ${t.format}
 }
 
 export default function QuizPage() {
-  const { locale: lang } = useParams();
+  const { lang, t } = useLanguage();
   const router = useRouter();
 
   const quizLang = quizTranslations[lang] || quizTranslations['en'];
@@ -125,7 +127,8 @@ export default function QuizPage() {
                     onClick={handleNext}
                     className="mt-6 px-4 py-2 text-sm text-blue-500 hover:underline"
                   >
-                    Next
+                   {t.next || 'Next'}
+
                   </button>
                 </>
               ) : imageBackgroundIds.includes(currentId) ? (
@@ -187,7 +190,7 @@ export default function QuizPage() {
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <h1 className="text-xl font-bold">Your Travel Preferences</h1>
+              <h1 className="text-xl font-bold">{t.yourPreferences || 'Your Travel Preferences'}</h1>
               <div className="text-left bg-white dark:bg-slate-800 p-4 rounded shadow mt-4 space-y-2">
                 {Object.entries(answers).map(([key, val]) => (
                   <p key={key}>
@@ -203,11 +206,11 @@ export default function QuizPage() {
                   router.push(`/${lang}/results`);
                 }}
               >
-                Generate Results →
+               {t.generateResults || 'Generate Results →'}
               </button>
               <div className="mt-3">
                 <button onClick={handleRestart} className="text-sm underline text-blue-400">
-                  Start Over
+                {t.restart || 'Start Over'}
                 </button>
               </div>
             </motion.div>

@@ -2,11 +2,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { translateString } from '../lib/translateFields.js';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Source questions (English)
+// Manually call your LibreTranslate API directly
+async function translateString(text, target) {
+  if (!text || target === 'en') return text;
+
+  const res = await fetch('http://localhost:32768/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      q: text,
+      source: 'en',
+      target
+    })
+  });
+
+  const json = await res.json();
+  return json.translatedText || text;
+}
+
+// Original English quiz content
 const questions = [
   {
     id: 'group',
@@ -17,6 +33,7 @@ const questions = [
     id: 'continent',
     question: 'What region are you most interested in?',
     options: ['Europe', 'Asia', 'South America', 'Anywhere!'],
+    background: true
   },
   {
     id: 'budget',
@@ -27,11 +44,13 @@ const questions = [
     id: 'season',
     question: 'When do you want to travel?',
     options: ['Spring', 'Summer', 'Fall', 'Winter'],
+    background: true
   },
   {
     id: 'vibe',
     question: 'What kind of trip are you looking for?',
     options: ['Adventure', 'Relaxation', 'City life', 'Cultural', 'Remote/nature'],
+    background: true
   },
   {
     id: 'features',
@@ -58,12 +77,17 @@ const questions = [
   }
 ];
 
-const supportedLanguages = ['es', 'fr', 'de', 'pt', 'ja', 'zh', 'ar', 'hi', 'ru'];
+const supportedLanguages = ['es', 'fr', 'de', 'pt', 'ja', 'zh', 'hi', 'ar', 'ru'];
 const baseLang = 'en';
 
 const result = { [baseLang]: {} };
 questions.forEach((q) => {
-  result[baseLang][q.id] = { question: q.question, options: q.options };
+  result[baseLang][q.id] = {
+    question: q.question,
+    options: q.options,
+    ...(q.type && { type: q.type }),
+    ...(q.background && { background: q.background }),
+  };
 });
 
 const translate = async () => {
@@ -80,7 +104,9 @@ const translate = async () => {
 
       result[lang][q.id] = {
         question: translatedQ,
-        options: translatedOpts
+        options: translatedOpts,
+        ...(q.type && { type: q.type }),
+        ...(q.background && { background: q.background }),
       };
     }
   }

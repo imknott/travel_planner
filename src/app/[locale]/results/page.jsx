@@ -1,19 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { translations } from '@/lib/translations';
-import { translateString } from '@/lib/translateFields';
+import { useLanguage } from '@/context/LanguageContext';
+import { translateUIString } from '@/lib/usetranslationApi';
 import { linkifyAirlinesWithPills } from '@/lib/utils';
 import GoogleAds from '@/components/googleAds';
 
 export default function ResultsPage() {
   const router = useRouter();
-  const { locale: lang } = useParams();
-  const t = translations[lang] || translations['en'];
+  const { lang, t } = useLanguage();
 
-  const [resultText, setResultText] = useState('');
+  const [translatedCards, setTranslatedCards] = useState([]);
   const [regenerating, setRegenerating] = useState(false);
   const [refinedDates, setRefinedDates] = useState({});
   const [loadingDates, setLoadingDates] = useState({});
@@ -26,22 +25,31 @@ export default function ResultsPage() {
       return;
     }
 
-    const loadTranslation = async () => {
+    const cardTexts = stored
+      .split(/\d\.\s|✈️/)
+      .map((card) => card.trim())
+      .filter((card) => card.length > 0);
+
+    const load = async () => {
       if (lang === 'en') {
-        setResultText(stored);
+        setTranslatedCards(cardTexts);
         return;
       }
 
       try {
-        const translated = await translateString(stored, lang);
-        setResultText(translated);
+        const translated = await Promise.all(
+          cardTexts.map((text) =>
+            translateUIString(text, lang).catch(() => text)
+          )
+        );
+        setTranslatedCards(translated);
       } catch (err) {
         console.error('[Translation error]:', err);
-        setResultText(stored);
+        setTranslatedCards(cardTexts);
       }
     };
 
-    loadTranslation();
+    load();
   }, [router, lang]);
 
   const handleRegenerate = async () => {
@@ -66,11 +74,20 @@ export default function ResultsPage() {
       const newResult = data.result || '';
       sessionStorage.setItem('flighthacked_result', newResult);
 
+      const cardTexts = newResult
+        .split(/\d\.\s|✈️/)
+        .map((card) => card.trim())
+        .filter((card) => card.length > 0);
+
       if (lang === 'en') {
-        setResultText(newResult);
+        setTranslatedCards(cardTexts);
       } else {
-        const translated = await translateString(newResult, lang);
-        setResultText(translated);
+        const translated = await Promise.all(
+          cardTexts.map((text) =>
+            translateUIString(text, lang).catch(() => text)
+          )
+        );
+        setTranslatedCards(translated);
       }
     } catch (error) {
       toast.error('Failed to regenerate suggestions.');
@@ -98,12 +115,13 @@ export default function ResultsPage() {
     }
   };
 
-  if (!resultText) return null;
-
-  const cards = resultText
-    .split(/\d\.\s|✈️/)
-    .map((card) => card.trim())
-    .filter((card) => card.length > 0);
+  if (!translatedCards.length) {
+    return (
+      <div className="min-h-screen pt-24 px-4 text-center text-lg">
+        {t.loading || 'Translating results...'}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-3xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
@@ -112,7 +130,7 @@ export default function ResultsPage() {
       </h1>
 
       <div className="space-y-6">
-        {cards.map((card, index) => {
+        {translatedCards.map((card, index) => {
           const { jsx, hasMultipleAirlines } = linkifyAirlinesWithPills(card);
 
           return (
