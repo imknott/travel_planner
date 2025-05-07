@@ -5,14 +5,16 @@ import { translateString } from '@/lib/translateFields';
 
 export async function POST(req) {
   try {
-    const { userQuery, from } = await req.json();
+    const { userQuery, from, lang } = await req.json();
 
     if (!userQuery || typeof userQuery !== 'string') {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
+    // Step 1: Auto-translate query to English
     const { translatedText, originalLang } = await autoTranslateToEnglish(userQuery);
 
+    // Step 2: Build LLM prompt
     const prompt = `
 You are a friendly travel assistant. A user will describe their trip preferences.
 
@@ -43,8 +45,7 @@ User is flying from: "${from || 'unknown location'}"
 User query: "${translatedText}"
 `;
 
-    
-
+    // Step 3: Get Ollama response
     const response = await ollama.chat({
       model: 'mistral',
       messages: [
@@ -57,13 +58,15 @@ User query: "${translatedText}"
 
     let outputText = response.message.content;
 
-    if (originalLang !== 'en') {
-      outputText = await translateString(outputText, originalLang);
+    // Step 4: Translate result back to original language if needed
+    const targetLang = lang || originalLang;
+    if (targetLang !== 'en') {
+      outputText = await translateString(outputText, targetLang);
     }
 
     return NextResponse.json({ result: outputText });
   } catch (err) {
-    console.error('Ollama API error:', err);
+    console.error('❌ /api/search error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
