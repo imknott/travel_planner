@@ -2,14 +2,11 @@
   "name": "travel_planner",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
   "dev": "next dev --turbopack",
   "build": "next build",
   "start": "next start -p 8080",
-  "lint": "next lint",
-  "translate-ui": "node src/scripts/translate-missing-ui.mjs",
-  "translate-quiz": "node src/scripts/translate-quiz.mjs"
+  "lint": "next lint"
 },
   "dependencies": {
     "framer-motion": "^12.10.0",
