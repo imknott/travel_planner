@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { quizTranslations } from '@/lib/quizTranslations';
+import { quizTranslations } from '@/lib/quiz_translations';
 import GoogleAds from '@/components/googleAds';
 import { promptTemplates } from '@/lib/promptTemplates';
 
