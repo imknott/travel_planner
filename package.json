@@ -6,7 +6,9 @@
   "dev": "next dev --turbopack",
   "build": "next build",
   "start": "next start -p 8080",
-  "lint": "next lint"
+  "lint": "next lint",
+  "check-keys": "node src/scripts/checkMissingTranslationKeys.js",
+  "translate-missing": "node src/scripts/autoTranslateMissingKeys.js"
 },
   "dependencies": {
     "framer-motion": "^12.10.0",

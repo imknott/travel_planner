@@ -12,7 +12,19 @@ export const translations = {
       "✔️ Free to use",
       "✔️ Open source"
     ],
-    "popular": "🔥 Popular Searches: Tokyo, Paris, Bali, Cape Town"
+    "popular": "🔥 Popular Searches: Tokyo, Paris, Bali, Cape Town",
+    "tripSummary": "Your flight suggestions",
+    "tripOption": "Trip Option",
+    "refineDates": "Get exact travel dates",
+    "refiningDates": "Refining dates...",
+    "suggestedDates": "Suggested Dates",
+    "tryAgain": "Not what you’re looking for? Try again",
+    "searchAgain": "Search Again",
+    "bookFlights": "Book Flights (Coming Soon)",
+    "generateResults": "Generate Results →",
+    "restart": "Start Over",
+    "yourPreferences": "Your Travel Preferences",
+    "next": "Next"
   },
   "es": {
     "tagline": "Hackea tu viaje. Paga menos. Ve más.",
@@ -27,7 +39,19 @@ export const translations = {
       "✔️ Gratis",
       "✔️ Código abierto"
     ],
-    "popular": "🔥 Búsquedas populares: Tokio, París, Bali, Ciudad del Cabo"
+    "popular": "🔥 Búsquedas populares: Tokio, París, Bali, Ciudad del Cabo",
+    "tripSummary": "Sugerencias de vuelo",
+    "tripOption": "Opción de viaje",
+    "refineDates": "Obtenga fechas exactas de viaje",
+    "refiningDates": "Refiniendo las fechas...",
+    "suggestedDates": "Fechas sugeridas",
+    "tryAgain": "¿No es lo que estás buscando? Inténtalo de nuevo",
+    "searchAgain": "Buscar otra vez",
+    "bookFlights": "Vuelos de Reserva (Coming Soon)",
+    "generateResults": "Generar resultados →",
+    "restart": "Inicio",
+    "yourPreferences": "Sus preferencias de viaje",
+    "next": "Siguiente"
   },
   "zh": {
     "tagline": "破解您的旅行。花更少，看到更多。",
@@ -42,7 +66,19 @@ export const translations = {
       "✔️ 免费使用",
       "✔️ 开源"
     ],
-    "popular": "🔥 热门搜索：东京，巴黎，巴厘岛，开普敦"
+    "popular": "🔥 热门搜索：东京，巴黎，巴厘岛，开普敦",
+    "tripSummary": "你的飞行建议",
+    "tripOption": "路径选项",
+    "refineDates": "确切的旅行日期",
+    "refiningDates": "精炼出日期...",
+    "suggestedDates": "建议的日期",
+    "tryAgain": "不是你想找的吗? 再试一次",
+    "searchAgain": "再次搜索",
+    "bookFlights": "书籍飞行( 来得及)",
+    "generateResults": "产生结果_",
+    "restart": "重新开始",
+    "yourPreferences": "您的旅行首选项",
+    "next": "下一个"
   },
   "hi": {
     "tagline": "अपनी यात्रा को हैक करें। कम खर्च करें, अधिक देखें।",
@@ -57,7 +93,19 @@ export const translations = {
       "✔️ उपयोग करने के लिए मुफ़्त",
       "✔️ ओपन सोर्स"
     ],
-    "popular": "🔥 लोकप्रिय खोजें: टोक्यो, पेरिस, बाली, केप टाउन"
+    "popular": "🔥 लोकप्रिय खोजें: टोक्यो, पेरिस, बाली, केप टाउन",
+    "tripSummary": "आपकी उड़ान सुझाव",
+    "tripOption": "यात्रा विकल्प",
+    "refineDates": "सटीक यात्रा तिथियां प्राप्त करें",
+    "refiningDates": "रिफाइनिंग तिथियां...",
+    "suggestedDates": "सुझाव तिथि",
+    "tryAgain": "क्या आप देख रहे हैं? फिर से कोशिश करो",
+    "searchAgain": "फिर से खोजें",
+    "bookFlights": "बुक फ्लाइट्स (Coming Soon)",
+    "generateResults": "परिणाम उत्पन्न करना →",
+    "restart": "शुरू करना",
+    "yourPreferences": "आपकी यात्रा प्राथमिकता",
+    "next": "अगला"
   },
   "ar": {
     "tagline": "اخترق رحلتك. ادفع أقل. شاهد المزيد.",
@@ -72,7 +120,19 @@ export const translations = {
       "✔️ مجاني للاستخدام",
       "✔️ مفتوح المصدر"
     ],
-    "popular": "🔥 عمليات البحث الشائعة: طوكيو، باريس، بالي، كيب تاون"
+    "popular": "🔥 عمليات البحث الشائعة: طوكيو، باريس، بالي، كيب تاون",
+    "tripSummary": "إقتراحات رحلتك",
+    "tripOption": "الخيار الثلاثي",
+    "refineDates": "الحصول على مواعيد السفر",
+    "refiningDates": "تواريخ صقل.",
+    "suggestedDates": "التواريخ المقترحة",
+    "tryAgain": "ليس ما تبحث عنه؟ حاول مرة أخرى",
+    "searchAgain": "مرة أخرى",
+    "bookFlights": "رحلات للكتب (مباشرة)",
+    "generateResults": "نتائج الوراثة",
+    "restart": "البداية",
+    "yourPreferences": "أفضليات سفرك",
+    "next": "التالي"
   },
   "pt": {
     "tagline": "Hackeie sua viagem. Pague menos. Veja mais.",
@@ -87,7 +147,19 @@ export const translations = {
       "✔️ Gratuito",
       "✔️ Código aberto"
     ],
-    "popular": "🔥 Buscas populares: Tóquio, Paris, Bali, Cidade do Cabo"
+    "popular": "🔥 Buscas populares: Tóquio, Paris, Bali, Cidade do Cabo",
+    "tripSummary": "Suas sugestões de voo",
+    "tripOption": "Opção de Viagem",
+    "refineDates": "Obter datas exatas de viagem",
+    "refiningDates": "Datas de refinação...",
+    "suggestedDates": "Datas Sugeridas",
+    "tryAgain": "Não é o que você está procurando? Tenta outra vez",
+    "searchAgain": "Procurar novamente",
+    "bookFlights": "Reserve Voos (Em Breve)",
+    "generateResults": "Gerar resultados →",
+    "restart": "Iniciar de novo",
+    "yourPreferences": "Suas Preferências de Viagem",
+    "next": "Próxima"
   },
   "ru": {
     "tagline": "Взломай своё путешествие. Плати меньше. Смотри больше.",
@@ -102,7 +174,19 @@ export const translations = {
       "✔️ Бесплатно",
       "✔️ С открытым исходным кодом"
     ],
-    "popular": "🔥 Популярные направления: Токио, Париж, Бали, Кейптаун"
+    "popular": "🔥 Популярные направления: Токио, Париж, Бали, Кейптаун",
+    "tripSummary": "Ваши предложения по полетам",
+    "tripOption": "Вариант поездки",
+    "refineDates": "Получите точные даты поездки",
+    "refiningDates": "Уточнение дат...",
+    "suggestedDates": "Предлагаемые даты",
+    "tryAgain": "Не то, что вы ищете? Попробуйте еще раз",
+    "searchAgain": "Поиск снова",
+    "bookFlights": "Книжные рейсы (скоро)",
+    "generateResults": "Генерировать результаты",
+    "restart": "Начать все сначала",
+    "yourPreferences": "Ваши предпочтения в путешествиях",
+    "next": "Следующий"
   },
   "ja": {
     "tagline": "旅をハック。安く、もっと見る。",
@@ -117,7 +201,19 @@ export const translations = {
       "✔️ 無料で使える",
       "✔️ オープンソース"
     ],
-    "popular": "🔥 人気の検索: 東京、パリ、バリ、ケープタウン"
+    "popular": "🔥 人気の検索: 東京、パリ、バリ、ケープタウン",
+    "tripSummary": "フライトの提案",
+    "tripOption": "トリップオプション",
+    "refineDates": "正確な旅行日",
+    "refiningDates": "期限切れ...",
+    "suggestedDates": "提案された日付",
+    "tryAgain": "あなたが探しているものではない? もう一度お試しください",
+    "searchAgain": "再び検索",
+    "bookFlights": "フライトを予約する(近日公開)",
+    "generateResults": "結果の生成 →",
+    "restart": "スタートアップ",
+    "yourPreferences": "あなたの旅行環境",
+    "next": "次へ"
   },
   "fr": {
     "tagline": "Optimisez votre voyage. Payez moins. Explorez plus.",
@@ -132,7 +228,19 @@ export const translations = {
       "✔️ Gratuit",
       "✔️ Open source"
     ],
-    "popular": "🔥 Recherches populaires : Tokyo, Paris, Bali, Le Cap"
+    "popular": "🔥 Recherches populaires : Tokyo, Paris, Bali, Le Cap",
+    "tripSummary": "Vos suggestions de vol",
+    "tripOption": "Option de voyage",
+    "refineDates": "Obtenez des dates de voyage exactes",
+    "refiningDates": "Raffiner les dates...",
+    "suggestedDates": "Dates proposées",
+    "tryAgain": "Pas ce que vous cherchez ? Essaie encore",
+    "searchAgain": "Recherche à nouveau",
+    "bookFlights": "Réserver des vols (à venir)",
+    "generateResults": "Générer les résultats →",
+    "restart": "Démarrage",
+    "yourPreferences": "Vos préférences de voyage",
+    "next": "Suivant"
   },
   "de": {
     "tagline": "Hacke deine Reise. Zahle weniger. Sieh mehr.",
@@ -147,6 +255,18 @@ export const translations = {
       "✔️ Kostenlos",
       "✔️ Open Source"
     ],
-    "popular": "🔥 Beliebte Suchanfragen: Tokio, Paris, Bali, Kapstadt"
+    "popular": "🔥 Beliebte Suchanfragen: Tokio, Paris, Bali, Kapstadt",
+    "tripSummary": "Ihre Flugvorschläge",
+    "tripOption": "Urlaubsoption",
+    "refineDates": "Genaue Reisedaten",
+    "refiningDates": "Termine...",
+    "suggestedDates": "Vorgeschlagene Termine",
+    "tryAgain": "Nicht, wonach Sie suchen? Noch einmal",
+    "searchAgain": "Noch einmal",
+    "bookFlights": "Flüge buchen (Coming Soon)",
+    "generateResults": "Ergebnisse generieren →",
+    "restart": "Start",
+    "yourPreferences": "Ihre Reisevorstellungen",
+    "next": "Nächste"
   }
 };

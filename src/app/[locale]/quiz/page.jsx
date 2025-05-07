@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { quizTranslations } from '@/lib/quiz_translations';
-import GoogleAds from '@/components/googleAds';
 import { promptTemplates } from '@/lib/promptTemplates';
+import GoogleAds from '@/components/GoogleAds';
 
 const optionBackgrounds = {
   Europe: '/images/europe.jpg',
@@ -23,7 +23,6 @@ const optionBackgrounds = {
   'Remote/nature': '/images/remote_nature.jpg',
 };
 
-// IDs to render with image background
 const imageBackgroundIds = ['continent', 'season', 'vibe'];
 
 function generateTravelPrompt(answers, lang = 'en') {
@@ -44,7 +43,6 @@ ${t.intro}
 ${t.format}
   `;
 }
-
 
 export default function QuizPage() {
   const { locale: lang } = useParams();
@@ -200,7 +198,7 @@ export default function QuizPage() {
               <button
                 className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 onClick={() => {
-                  const prompt = generateTravelPrompt(answers);
+                  const prompt = generateTravelPrompt(answers, lang);
                   sessionStorage.setItem('flighthacked_input', prompt);
                   router.push(`/${lang}/results`);
                 }}
