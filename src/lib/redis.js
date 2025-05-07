@@ -1,6 +1,13 @@
-// lib/redis.js
 import Redis from 'ioredis';
 
-const redis = new Redis(); // Defaults to localhost:6379
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+redis.on('connect', () => {
+  console.log('[Redis] Connected');
+});
+
+redis.on('error', (err) => {
+  console.error('[Redis] Connection error:', err.message);
+});
 
 export default redis;
