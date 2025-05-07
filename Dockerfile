@@ -19,4 +19,5 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # 7. Start the Next.js server
-CMD ["npm", "start"]
+CMD ["node", ".next/standalone/server.js"]
+
