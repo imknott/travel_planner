@@ -1,24 +1,22 @@
-# Use official Node.js 18 base image
+# 1. Use official Node.js base image
 FROM node:18-slim
 
-# Set working directory
+# 2. Set working directory
 WORKDIR /app
 
-# Copy package files and install deps first (for Docker caching)
+# 3. Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of your app
+# 4. Copy all app files
 COPY . .
 
-# Build the Next.js app
+# 5. Build the Next.js app
 RUN npm run build
 
-# Set required Cloud Run environment variable
+# 6. Tell Next.js to use the standalone build output
+ENV NODE_ENV=production
 ENV PORT=8080
 
-# Expose port for Cloud Run
-EXPOSE 8080
-
-# Start Next.js server in standalone mode on port 8080
+# 7. Start the Next.js server
 CMD ["npm", "start"]
