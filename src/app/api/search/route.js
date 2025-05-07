@@ -33,9 +33,9 @@ Each suggestion should be 1–2 short, natural-language sentences, including:
 
 Example format (NO markdown or code blocks):
 
-From Raleigh, North Carolina there is a flight to Tokyo in April — Around $780 round-trip on United or JAL. Includes 1 layover in Chicago. Book here: https://www.united.com
+1. From Raleigh, North Carolina there is a flight to Tokyo in April — Around $780 round-trip on United or JAL. Includes 1 layover in Chicago. Book here: https://www.united.com
 
- Lisbon in May — About $520 nonstop on TAP Portugal. Book here: https://www.flytap.com
+2. Lisbon in May — About $520 nonstop on TAP Portugal. Book here: https://www.flytap.com
 
 Do not use colons, brackets, or bullet lists. Do not return JSON.
 
