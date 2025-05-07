@@ -1,23 +1,38 @@
-# 1. Use official Node.js base image
-FROM node:18-slim
+# ====== First stage: Build the app ======
+FROM node:18-slim AS builder
 
-# 2. Set working directory
 WORKDIR /app
 
-# 3. Install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# 4. Copy all app files
+# Copy source code
 COPY . .
 
-# 5. Build the Next.js app
+# Build the Next.js app (standalone mode)
 RUN npm run build
 
-# 6. Tell Next.js to use the standalone build output
+# ====== Second stage: Production image ======
+FROM node:18-slim
+
+WORKDIR /app
+
+# Copy standalone output from builder
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+
+# Install only production dependencies
+RUN npm install --omit=dev
+
+# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# 7. Start the Next.js server
-CMD ["node", ".next/standalone/server.js"]
+# Expose the port Cloud Run listens on
+EXPOSE 8080
 
+# Start the app
+CMD ["node", "server.js"]
