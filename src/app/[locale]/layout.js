@@ -2,7 +2,7 @@ import { LanguageProvider } from '@/context/LanguageContext';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
 import { Toaster } from 'react-hot-toast';
-import './globals.css';
+import "@/app/globals.css";
 
 export default function LocaleLayout({ children, params }) {
   const { locale } = params;

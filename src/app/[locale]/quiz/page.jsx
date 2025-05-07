@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { quizTranslations } from '@/lib/quiz_translations';
 import { promptTemplates } from '@/lib/promptTemplates';
-import GoogleAds from '@/components/GoogleAds';
+import GoogleAds from '@/components/googleAds';
 
 const optionBackgrounds = {
   Europe: '/images/europe.jpg',
