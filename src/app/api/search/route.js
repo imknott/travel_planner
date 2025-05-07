@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ollama } from '@/lib/ollama';
-import { autoTranslateToEnglish } from '@/lib/translate';
-import { translateString } from '@/lib/translateFields';
+import { autoTranslateToEnglish,translateUIString } from '@/lib/usetranslationApi';
 
 export async function POST(req) {
   try {
@@ -61,7 +60,7 @@ User query: "${translatedText}"
     // Step 4: Translate result back to original language if needed
     const targetLang = lang || originalLang;
     if (targetLang !== 'en') {
-      outputText = await translateString(outputText, targetLang);
+      outputText = await translateUIString(outputText, targetLang);
     }
 
     return NextResponse.json({ result: outputText });
