@@ -1,78 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { quizTranslations } from '@/lib/quizTranslations';
 import GoogleAds from '@/components/googleAds';
-
-const questions = [
-  {
-    id: 'group',
-    question: 'Who are you traveling with?',    options: ['Solo', 'Couple', 'Family with children', 'Friends', 'Partner or spouse', 'Other']
-  },
-  {
-    id: 'continent',
-    question: 'What region are you most interested in?',
-    options: ['Europe', 'Asia', 'South America', 'Anywhere!'],
-    background: true
-  },
-  {
-    id: 'budget',
-    question: 'What’s your ideal flight budget?',
-    options: ['<$300', '$300-$500', '$500-$800', 'No limit']
-  },
-  {
-    id: 'season',
-    question: 'When do you want to travel?',
-    options: ['Spring', 'Summer', 'Fall', 'Winter'],
-    background: true
-  },
-  {
-    id: 'vibe',
-    question: 'What kind of trip are you looking for?',
-    options: ['Adventure', 'Relaxation', 'City life', 'Cultural', 'Remote/nature'],
-    background: true
-  },
-  {
-    id: 'features',
-    question: 'What features are important in your destination?',
-    type: 'multi',
-    options: [
-      'LGBTQ+ friendly',
-      'Culturally rich',
-      'Historical landmarks',
-      'Diverse communities',
-      'Easy public transit',
-      'Safe overall',
-      'Disability accessible',
-      'Solo female travel safe',
-      'Nightlife & social scene',
-      'Nature & outdoors',
-      'Foodie destination',
-    ],
-  },
-  {
-    id: 'visa',
-    question: 'Do you have any visa/passport restrictions?',
-    options: ['No restrictions', 'US passport only', 'EU passport only', 'Need visa-free destinations', 'Other/complicated'],
-  }
-];
-
-function generateTravelPrompt(answers) {
-  return `
-You're a travel advisor helping someone plan their next trip. Recommend 3 travel destinations that meet the following:
-
-- Traveler type: ${answers.group}
-- Region: ${answers.continent}
-- Budget: ${answers.budget}
-- Season: ${answers.season}
-- Trip vibe: ${answers.vibe}
-- Important features: ${answers.features?.join(', ') || 'None'}
-- Visa/passport restrictions: ${answers.visa}
-
-Each destination should briefly explain why it fits these criteria, with attention to safety, accessibility, and cultural relevance.
-`;
-}
+import { promptTemplates } from '@/lib/promptTemplates';
 
 const optionBackgrounds = {
   Europe: '/images/europe.jpg',
@@ -90,14 +23,41 @@ const optionBackgrounds = {
   'Remote/nature': '/images/remote_nature.jpg',
 };
 
+// IDs to render with image background
+const imageBackgroundIds = ['continent', 'season', 'vibe'];
+
+function generateTravelPrompt(answers, lang = 'en') {
+  const t = promptTemplates[lang] || promptTemplates['en'];
+  const label = t.label;
+
+  return `
+${t.intro}
+
+- ${label.group}: ${answers.group}
+- ${label.continent}: ${answers.continent}
+- ${label.budget}: ${answers.budget}
+- ${label.season}: ${answers.season}
+- ${label.vibe}: ${answers.vibe}
+- ${label.features}: ${answers.features?.join(', ') || 'None'}
+- ${label.visa}: ${answers.visa}
+
+${t.format}
+  `;
+}
+
+
 export default function QuizPage() {
+  const { locale: lang } = useParams();
+  const router = useRouter();
+
+  const quizLang = quizTranslations[lang] || quizTranslations['en'];
+  const questionIds = Object.keys(quizLang);
   const [answers, setAnswers] = useState({});
   const [step, setStep] = useState(0);
   const [loadedImages, setLoadedImages] = useState({});
-  const router = useRouter();
-
-  const current = questions[step];
-  const isComplete = step >= questions.length;
+  const currentId = questionIds[step];
+  const current = quizLang[currentId];
+  const isComplete = step >= questionIds.length;
 
   useEffect(() => {
     Object.values(optionBackgrounds).forEach((src) => {
@@ -109,13 +69,13 @@ export default function QuizPage() {
 
   const handleSelect = (value) => {
     if (current.type === 'multi') {
-      const selected = answers[current.id] || [];
+      const selected = answers[currentId] || [];
       const updated = selected.includes(value)
         ? selected.filter((v) => v !== value)
         : [...selected, value];
-      setAnswers({ ...answers, [current.id]: updated });
+      setAnswers({ ...answers, [currentId]: updated });
     } else {
-      setAnswers({ ...answers, [current.id]: value });
+      setAnswers({ ...answers, [currentId]: value });
       setStep(step + 1);
     }
   };
@@ -132,7 +92,7 @@ export default function QuizPage() {
         <AnimatePresence mode="wait">
           {!isComplete ? (
             <motion.div
-              key={current.id}
+              key={currentId}
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
@@ -145,7 +105,7 @@ export default function QuizPage() {
                 <>
                   <div className="flex flex-wrap justify-center gap-2">
                     {current.options.map((opt) => {
-                      const selected = (answers[current.id] || []).includes(opt);
+                      const selected = (answers[currentId] || []).includes(opt);
                       return (
                         <motion.button
                           key={opt}
@@ -170,10 +130,10 @@ export default function QuizPage() {
                     Next
                   </button>
                 </>
-              ) : current.background ? (
+              ) : imageBackgroundIds.includes(currentId) ? (
                 <div className="grid grid-cols-2 gap-4 mt-6">
                   {current.options.map((opt) => {
-                    const selected = answers[current.id] === opt;
+                    const selected = answers[currentId] === opt;
                     const bg = optionBackgrounds[opt];
                     const isLoaded = loadedImages[bg];
 
@@ -203,7 +163,7 @@ export default function QuizPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4 mt-6">
                   {current.options.map((opt) => {
-                    const selected = answers[current.id] === opt;
+                    const selected = answers[currentId] === opt;
                     return (
                       <button
                         key={opt}
@@ -242,7 +202,7 @@ export default function QuizPage() {
                 onClick={() => {
                   const prompt = generateTravelPrompt(answers);
                   sessionStorage.setItem('flighthacked_input', prompt);
-                  router.push('/results');
+                  router.push(`/${lang}/results`);
                 }}
               >
                 Generate Results →
@@ -256,7 +216,7 @@ export default function QuizPage() {
           )}
         </AnimatePresence>
       </div>
-      <GoogleAds></GoogleAds>
+      <GoogleAds />
     </div>
   );
 }

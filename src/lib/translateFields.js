@@ -1,4 +1,4 @@
-import redis from './redis'; // your Redis client
+import redis from './redis.js';
 import crypto from 'crypto';
 
 function hash(text) {

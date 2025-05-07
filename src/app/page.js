@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { translations } from '@/lib/translations';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Home() {
   const [input, setInput] = useState('');
   const [from, setFrom] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lang, setLang] = useState('en');
   const router = useRouter();
+  const lang = params.locale;
   const t = translations[lang] || translations['en'];
 
   useEffect(() => {

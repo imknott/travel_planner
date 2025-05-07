@@ -1,32 +1,48 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { translations } from '@/lib/translations';
-import { linkifyAirlinesWithPills } from '@/lib/utils'; // updated import
+import { translateString } from '@/lib/translateFields';
+import { linkifyAirlinesWithPills } from '@/lib/utils';
 import GoogleAds from '@/components/googleAds';
 
 export default function ResultsPage() {
   const router = useRouter();
+  const { locale: lang } = useParams();
+  const t = translations[lang] || translations['en'];
+
   const [resultText, setResultText] = useState('');
   const [regenerating, setRegenerating] = useState(false);
   const [refinedDates, setRefinedDates] = useState({});
   const [loadingDates, setLoadingDates] = useState({});
-  const [lang, setLang] = useState('en');
 
   useEffect(() => {
-    const storedLang = localStorage.getItem('flighthacked_lang');
-    if (storedLang) setLang(storedLang);
-
     const stored = sessionStorage.getItem('flighthacked_result');
     if (!stored) {
       toast.error('No results found. Please start a new search.');
-      router.push('/');
-    } else {
-      setResultText(stored);
+      router.push(`/${lang}`);
+      return;
     }
-  }, [router]);
+
+    const loadTranslation = async () => {
+      if (lang === 'en') {
+        setResultText(stored);
+        return;
+      }
+
+      try {
+        const translated = await translateString(stored, lang);
+        setResultText(translated);
+      } catch (err) {
+        console.error('[Translation error]:', err);
+        setResultText(stored);
+      }
+    };
+
+    loadTranslation();
+  }, [router, lang]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
@@ -47,8 +63,15 @@ export default function ResultsPage() {
       });
 
       const data = await res.json();
-      setResultText(data.result || '');
-      sessionStorage.setItem('flighthacked_result', data.result || '');
+      const newResult = data.result || '';
+      sessionStorage.setItem('flighthacked_result', newResult);
+
+      if (lang === 'en') {
+        setResultText(newResult);
+      } else {
+        const translated = await translateString(newResult, lang);
+        setResultText(translated);
+      }
     } catch (error) {
       toast.error('Failed to regenerate suggestions.');
     } finally {
@@ -76,7 +99,6 @@ export default function ResultsPage() {
   };
 
   if (!resultText) return null;
-  const t = translations[lang] || translations['en'];
 
   const cards = resultText
     .split(/\d\.\s|✈️/)
@@ -85,7 +107,9 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-3xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
-      <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">{t.tripSummary}</h1>
+      <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
+        {t.tripSummary || 'Your flight suggestions'}
+      </h1>
 
       <div className="space-y-6">
         {cards.map((card, index) => {
@@ -114,7 +138,7 @@ export default function ResultsPage() {
                 className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
               >
                 {loadingDates[index]
-                  ? 'Refining dates…'
+                  ? t.refiningDates || 'Refining dates…'
                   : t.refineDates || 'Get exact travel dates'}
               </button>
 
@@ -145,7 +169,7 @@ export default function ResultsPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4 justify-center mt-8">
         <a
-          href="/"
+          href={`/${lang}`}
           className="inline-block px-5 py-2 bg-[#007BFF] hover:bg-[#005fcc] text-white rounded transition text-sm"
         >
           🔁 {t.searchAgain || 'Search Again'}
