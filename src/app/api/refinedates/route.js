@@ -50,14 +50,10 @@ Trip:
 "${cardText}"
 `;
 
+     // Generate response with Gemini
     const result = await ai.models.generateContent({
-      model: 'gemini-pro', // or gemini-1.5-pro, gemini-2.0-flash
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }],
-        },
-      ],
+      model: 'gemini-pro',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
     const outputText =
