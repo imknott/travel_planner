@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import admin from 'firebase-admin';
 import { getAirlineUrl } from '@/lib/getAirlineUrl';
 
-// Firestore init (safe for Cloud Run)
+// Initialize Firestore
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -40,7 +40,6 @@ export async function POST(req) {
       }
     }
 
-    // Build Gemini prompt
     const prompt = `
 You are a friendly travel assistant. A user will describe their trip preferences in any language.
 
@@ -69,15 +68,14 @@ User is flying from: "${from || 'unknown location'}"
 User query: "${userQuery}"
 `;
 
-    // Generate response with Gemini
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
-    const outputText = (await result.text()).trim();
+    const outputText =
+      response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-    // Replace booking links with mapped airline URLs
     const linkedText = outputText.replace(/Book here:.*?$/gim, (line, index) => {
       const match = outputText
         .split('\n')[index]
@@ -87,10 +85,10 @@ User query: "${userQuery}"
 
       const airlineNames = match[1].split(/,|or|and/i).map(n => n.trim());
       const airlineLink = getAirlineUrl(airlineNames[0]);
+
       return airlineLink ? `Book here: ${airlineLink}` : line;
     });
 
-    // Save to Firestore
     await docRef.set({
       result: linkedText,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),

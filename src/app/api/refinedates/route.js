@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import admin from 'firebase-admin';
 
+// Initialize Firestore
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -50,14 +51,13 @@ Trip:
 "${cardText}"
 `;
 
-     // Generate response with Gemini
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
     const outputText =
-      result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
     await docRef.set({
       dates: outputText,
