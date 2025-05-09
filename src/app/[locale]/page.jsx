@@ -24,11 +24,14 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userQuery: input, from }),
       })
-        .then(res => res.text())
-        .then(text => {
+        .then(async (res) => {
+          const text = await res.text();
+          if (!res.ok) {
+            throw new Error(text || 'Unknown server error');
+          }
           const data = JSON.parse(text);
           return data.result || data;
-        });
+        });      
 
       const assistantResponse = await toast.promise(fetchPromise, {
         loading: 'Looking for flights…',
