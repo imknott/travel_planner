@@ -8,6 +8,8 @@ const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 export async function POST(req) {
   try {
     const { userQuery, from } = await req.json();
+    console.log('✅ Gemini API key loaded?', Boolean(process.env.GEMINI_API_KEY));
+
 
     if (!userQuery || typeof userQuery !== 'string') {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
