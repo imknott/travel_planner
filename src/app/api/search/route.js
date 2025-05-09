@@ -40,36 +40,44 @@ export async function POST(req) {
       }
     }
 
-    const prompt = `
-You are a friendly travel assistant. A user will describe their trip preferences in any language.
+const prompt = `
+You are a travel assistant. A user will describe their travel preferences in natural language.
 
-Your job is to return exactly 3 realistic flight suggestions that match their:
+Your job is to return exactly 3 realistic flight suggestions based on:
 - Departure location
 - Destination or region
 - Budget (USD)
 - Travel dates or time frame
 - Layover preferences
 
-Each suggestion must be a 1–2 sentence natural-language response, including:
-• From and to locations
-• Rough travel dates
-• Estimated price
-• Airline name(s)
-• A realistic booking link (e.g., https://www.delta.com)
+Each suggestion must be:
+- A single natural-language sentence
+- Realistic and specific (e.g., "From New York to Rome in September...")
 
-⚠️ Do not use markdown, brackets, or colons. Do not return JSON. Write in the **same language** as the user's query.
+Each must include:
+• From and to cities
+• Rough travel dates (e.g. "in July" or "this fall")
+• Approximate price in USD
+• Airline name(s) — only use real airlines (like Delta, United, Emirates, Lufthansa, etc.)
+• A single "Book here" link at the end of the sentence (not inline)
+
+⚠️ Output Rules:
+- No markdown, brackets, colons, or code formatting
+- Do not use placeholder URLs
+- Use only 1 sentence per suggestion, followed by "Book here: [airline link]"
 
 Examples:
 
-1. From Raleigh, NC to Tokyo in April — Around $780 round-trip on United or ANA. Includes 1 layover in Chicago. Book here: https://www.united.com  
-2. Lisbon in May — About $520 nonstop on TAP Air Portugal. Book here: https://www.flytap.com
+1. From New York to Tokyo in August — Around $950 round-trip on United Airlines or ANA. Book here: https://www.united.com  
+2. From Lisbon to Toronto this fall — About $550 round-trip on TAP or Air Canada. Book here: https://www.flytap.com
 
 User is flying from: "${from || 'unknown location'}"  
 User query: "${userQuery}"
 `;
 
+
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-pro',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
