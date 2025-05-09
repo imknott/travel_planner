@@ -46,7 +46,7 @@ User query: "${userQuery}"
 `;
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.0-pro', // Or gemini-1.5-pro, gemini-2.0-flash
+      model: 'gemini-2.0-flash', // Or gemini-1.5-pro, gemini-2.0-flash
       contents: [
         {
           role: 'user',
