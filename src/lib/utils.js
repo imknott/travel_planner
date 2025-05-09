@@ -1,6 +1,6 @@
 import React from 'react';
 import { fuzzyAirlineWebsiteMap } from './fuzzy_airline_links';
-import { canonicalAirlineMap } from './canonicalAirlineMapper.js'; // new import
+import { canonicalAirlineMap } from './canonicalAirlineMapper.js';
 
 const pillColors = [
   'bg-blue-100 text-blue-800',
@@ -16,13 +16,22 @@ const normalize = (str) =>
   str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
 
 export function linkifyAirlinesWithPills(rawText) {
+  // ✅ Guard against non-string input
+  if (typeof rawText !== 'string') {
+    console.warn('[linkifyAirlinesWithPills] Received non-string input:', rawText);
+    return {
+      jsx: <p className="mb-2">[Invalid response]</p>,
+      hasMultipleAirlines: false,
+    };
+  }
+
   let text = rawText.replace(/book here:.*?(https?:\/\/[^\s)]+)/gi, '');
   const elements = [];
   const matchedCanonicals = new Set();
   let remaining = text;
   let colorIndex = 0;
 
-  // Flatten aliases and map to canonical key
+  // Build alias-to-canonical mapping
   const aliasToCanonical = {};
   Object.entries(canonicalAirlineMap).forEach(([slug, aliases]) => {
     aliases.forEach((alias) => {
@@ -30,6 +39,7 @@ export function linkifyAirlinesWithPills(rawText) {
     });
   });
 
+  // Sort aliases for greedy matching
   const sortedAliases = Object.keys(fuzzyAirlineWebsiteMap).sort(
     (a, b) => b.length - a.length
   );
@@ -41,16 +51,15 @@ export function linkifyAirlinesWithPills(rawText) {
       const regex = new RegExp(`(^|[^a-zA-Z])(${alias})([^a-zA-Z]|$)`, 'i');
       const match = remaining.match(regex);
 
-      if (match) {
+      if (match && match.index !== undefined) {
         const [fullMatch, before, actualName] = match;
         const index = match.index + before.length;
         const aliasSlug = normalize(actualName);
         const canonicalSlug = aliasToCanonical[aliasSlug] || aliasSlug;
 
-        // ✅ Skip this alias if canonical airline already rendered
+        // ✅ Skip if already rendered
         if (matchedCanonicals.has(canonicalSlug)) continue;
 
-        // Push plain text before match
         if (index > 0) {
           elements.push(remaining.slice(0, index));
         }

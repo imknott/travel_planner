@@ -27,8 +27,8 @@ export default function ResultsPage() {
     const cardTexts = stored
       .split(/\d\.\s|✈️/)
       .map((card) => card.trim())
-      .filter((card) => card.length > 0);
-  
+      .filter((card) => typeof card === 'string' && card.length > 0);
+
     setTranslatedCards(cardTexts); // No translation needed
   }, [router]);
   
@@ -55,10 +55,10 @@ export default function ResultsPage() {
       const newResult = data.result || '';
       sessionStorage.setItem('flighthacked_result', newResult);
   
-      const cardTexts = newResult
-        .split(/\d\.\s|✈️/)
-        .map((card) => card.trim())
-        .filter((card) => card.length > 0);
+      const cardTexts = stored
+      .split(/\d\.\s|✈️/)
+      .map((card) => card.trim())
+      .filter((card) => typeof card === 'string' && card.length > 0);
   
       setTranslatedCards(cardTexts); // No re-translation needed
     } catch (error) {
