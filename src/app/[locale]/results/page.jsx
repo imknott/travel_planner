@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/context/LanguageContext';
-import { translateUIString } from '@/lib/usetranslationApi';
 import { linkifyAirlinesWithPills } from '@/lib/utils';
 import GoogleAds from '@/components/googleAds';
 
@@ -24,77 +23,51 @@ export default function ResultsPage() {
       router.push(`/${lang}`);
       return;
     }
-
+  
     const cardTexts = stored
       .split(/\d\.\s|✈️/)
       .map((card) => card.trim())
       .filter((card) => card.length > 0);
-
-    const load = async () => {
-      if (lang === 'en') {
-        setTranslatedCards(cardTexts);
-        return;
-      }
-
-      try {
-        const translated = await Promise.all(
-          cardTexts.map((text) =>
-            translateUIString(text, lang).catch(() => text)
-          )
-        );
-        setTranslatedCards(translated);
-      } catch (err) {
-        console.error('[Translation error]:', err);
-        setTranslatedCards(cardTexts);
-      }
-    };
-
-    load();
-  }, [router, lang]);
+  
+    setTranslatedCards(cardTexts); // No translation needed
+  }, [router]);
+  
 
   const handleRegenerate = async () => {
     setRegenerating(true);
     const input = sessionStorage.getItem('flighthacked_input');
     const from = sessionStorage.getItem('flighthacked_from');
-
+  
     if (!input) {
       toast.error('Missing previous search input.');
       setRegenerating(false);
       return;
     }
-
+  
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userQuery: input, from }),
       });
-
+  
       const data = await res.json();
       const newResult = data.result || '';
       sessionStorage.setItem('flighthacked_result', newResult);
-
+  
       const cardTexts = newResult
         .split(/\d\.\s|✈️/)
         .map((card) => card.trim())
         .filter((card) => card.length > 0);
-
-      if (lang === 'en') {
-        setTranslatedCards(cardTexts);
-      } else {
-        const translated = await Promise.all(
-          cardTexts.map((text) =>
-            translateUIString(text, lang).catch(() => text)
-          )
-        );
-        setTranslatedCards(translated);
-      }
+  
+      setTranslatedCards(cardTexts); // No re-translation needed
     } catch (error) {
       toast.error('Failed to regenerate suggestions.');
     } finally {
       setRegenerating(false);
     }
   };
+  
 
   const handleRefineDates = async (cardIndex, cardText) => {
     setLoadingDates((prev) => ({ ...prev, [cardIndex]: true }));

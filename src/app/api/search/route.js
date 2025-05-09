@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
-import { ollama } from '@/lib/ollama';
-import { autoTranslateToEnglish,translateUIString } from '@/lib/usetranslationApi';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getAirlineUrl } from '@/lib/getAirlineUrl'; // Adjust path as needed
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
 export async function POST(req) {
   try {
-    const { userQuery, from, lang } = await req.json();
+    const { userQuery, from } = await req.json();
 
     if (!userQuery || typeof userQuery !== 'string') {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
-    // Step 1: Auto-translate query to English
-    const { translatedText, originalLang } = await autoTranslateToEnglish(userQuery);
-
-    // Step 2: Build LLM prompt
     const prompt = `
-You are a friendly travel assistant. A user will describe their trip preferences.
+You are a friendly travel assistant. A user will describe their trip preferences in any language.
 
 Your job is to return exactly 3 realistic flight suggestions that match their:
 - Departure location
@@ -24,44 +23,41 @@ Your job is to return exactly 3 realistic flight suggestions that match their:
 - Travel dates or time frame
 - Layover preferences
 
-Each suggestion should be 1–2 short, natural-language sentences, including:
-• Departure Location
-• Destination
+Each suggestion must be a 1–2 sentence natural-language response, including:
+• From and to locations
 • Rough travel dates
-• Approximate price
-• Airline(s) and a real booking link
-• Layover info if relevant
+• Estimated price
+• Airline name(s)
+• A realistic booking link (e.g., https://www.delta.com)
 
-Example format (NO markdown or code blocks):
+⚠️ Do not use markdown, brackets, or colons. Do not return JSON. Write in the **same language** as the user's query.
 
-1. From Raleigh, North Carolina there is a flight to Tokyo in April — Around $780 round-trip on United or JAL. Includes 1 layover in Chicago. Book here: https://www.united.com
+Examples:
 
+1. From Raleigh, NC to Tokyo in April — Around $780 round-trip on United or ANA. Includes 1 layover in Chicago. Book here: https://www.united.com  
 2. Lisbon in May — About $520 nonstop on TAP Portugal. Book here: https://www.flytap.com
 
-Do not use colons, brackets, or bullet lists. Do not return JSON.
-
-User is flying from: "${from || 'unknown location'}"
-User query: "${translatedText}"
+User is flying from: "${from || 'unknown location'}"  
+User query: "${userQuery}"
 `;
 
-    // Step 3: Get Ollama response
-    const response = await ollama.chat({
-      model: 'mistral',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    // Step 1: Get Gemini response
+    const result = await model.generateContent(prompt);
+    let outputText = result.response.text();
+
+    // Step 2: Map airline names to booking links
+    outputText = outputText.replace(/Book here:.*?$/gim, (line, index) => {
+      const match = outputText
+        .split('\n')[index]
+        ?.match(/on ([^.]+?)\.? Book here:/i);
+
+      if (!match || match.length < 2) return line;
+
+      const airlineNames = match[1].split(/,|or|and/i).map(n => n.trim());
+      const airlineLink = getAirlineUrl(airlineNames[0]);
+
+      return airlineLink ? `Book here: ${airlineLink}` : line;
     });
-
-    let outputText = response.message.content;
-
-    // Step 4: Translate result back to original language if needed
-    const targetLang = lang || originalLang;
-    if (targetLang !== 'en') {
-      outputText = await translateUIString(outputText, targetLang);
-    }
 
     return NextResponse.json({ result: outputText });
   } catch (err) {

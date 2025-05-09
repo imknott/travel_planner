@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev --turbopack",
-  "build": "next build",
-  "start": "next start -p 8080",
-  "lint": "next lint",
-  "check-keys": "node src/scripts/checkMissingTranslationKeys.js",
-  "translate-missing": "node src/scripts/autoTranslateMissingKeys.js",
-  "translate-quiz": "node src/scripts/translate-quiz.mjs"
-},
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start -p 8080",
+    "lint": "next lint",
+    "check-keys": "node src/scripts/checkMissingTranslationKeys.js",
+    "translate-missing": "node src/scripts/autoTranslateMissingKeys.js",
+    "translate-quiz": "node src/scripts/translate-quiz.mjs"
+  },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "firebase-admin": "^13.3.0",
     "framer-motion": "^12.10.0",
     "ioredis": "^5.6.1",
     "lucide-react": "^0.507.0",
