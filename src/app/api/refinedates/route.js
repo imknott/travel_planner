@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import admin from 'firebase-admin';
 
-// Firestore init (safe for Cloud Run)
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -10,8 +9,7 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 const COLLECTION = 'refined_dates_cache';
@@ -52,7 +50,8 @@ Trip:
 "${cardText}"
 `;
 
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model: 'gemini-pro', // or gemini-1.5-pro, gemini-2.0-flash
       contents: [
         {
           role: 'user',
