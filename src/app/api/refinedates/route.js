@@ -52,7 +52,7 @@ Trip:
 
      // Generate response with Gemini
     const result = await ai.models.generateContent({
-      model: 'gemini-pro',
+      model: 'gemini-2.0-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
