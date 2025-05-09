@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-let redis;
-if (typeof window === 'undefined') {
-  const { default: Redis } = await import('@/lib/redis.js');
-  redis = Redis;
-}
-
-const endpoint = 'http://localhost:32768';
-
 function hash(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
