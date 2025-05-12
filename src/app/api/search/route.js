@@ -84,10 +84,10 @@ ${userQuery}
       from,
       to,
       startDate,
-      durationDays = 7,
+      durationDays,
       includeFlight = true,
-      includeHotel = false,
-      includeCar = false,
+      includeHotel,
+      includeCar,
     } = parsed;
 
     if (!from || !to || !startDate) {
@@ -95,8 +95,8 @@ ${userQuery}
     }
 
     // ─── Step 2: Resolve to IATA ────────────────────────────────────────────
-    const origin = await mapToIATA(from);
-    const destination = await mapToIATA(to);
+    const origin = fromIATA || await mapToIATA(from);
+    const destination = toIATA || await mapToIATA(to);
     if (!origin || !destination) {
       return NextResponse.json({ error: 'Could not resolve airport codes' }, { status: 400 });
     }
