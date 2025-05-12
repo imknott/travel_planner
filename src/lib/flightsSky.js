@@ -1,28 +1,40 @@
+// lib/flightsSky.js
+
 export async function getFlightsSky({ from, to, departDate, returnDate = null }) {
   const isRoundTrip = Boolean(returnDate);
-  const url = `https://flights-sky.p.rapidapi.com/${isRoundTrip ? 'roundtrip' : 'oneway'}`;
+  const endpoint = isRoundTrip ? 'search-roundtrip' : 'search-oneway';
+  const base = 'https://flights-sky.p.rapidapi.com/flights';
+  const url = new URL(`${base}/${endpoint}`);
 
-  const body = {
-    from,       // IATA code, e.g. "JFK"
-    to,         // IATA code, e.g. "NRT"
-    departDate, // format: "YYYY-MM-DD"
-    currency: 'USD',
-  };
+  // build query params
+  url.searchParams.set('fromEntityId', from);       // e.g. 'JFK'
+  url.searchParams.set('toEntityId', to);           // e.g. 'NRT'
+  url.searchParams.set('departDate', departDate);   // 'YYYY-MM-DD'
+  if (isRoundTrip) url.searchParams.set('returnDate', returnDate);
+  url.searchParams.set('currency', 'USD');
 
-  if (isRoundTrip) {
-    body.returnDate = returnDate; // Add return date only if round trip
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
+  const res = await fetch(url.toString(), {
+    method: 'GET',
     headers: {
-      'content-type': 'application/json',
       'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
       'X-RapidAPI-Host': 'flights-sky.p.rapidapi.com',
     },
-    body: JSON.stringify(body),
   });
 
-  const data = await response.json();
-  return data?.data || [];
+  if (!res.ok) {
+    throw new Error(`Flights-Sky API error ${res.status}`);
+  }
+
+  const json = await res.json();
+  // The API’s data array lives in json.data
+  const items = Array.isArray(json.data) ? json.data : [];
+
+  // Normalize each flight to include `.url`
+  return items.map((f) => ({
+    // spread all original fields in case you need them
+    ...f,
+    // Flights-Sky returns a `deep_link` you can use to book
+    url: f.deep_link || f.herf || null,
+  }));
 }
+

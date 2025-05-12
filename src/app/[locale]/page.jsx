@@ -19,12 +19,11 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userQuery: input }),
-      })
-        .then(async (res) => {
-          const text = await res.text();
-          if (!res.ok) throw new Error(text || 'Unknown server error');
-          return JSON.parse(text);
-        });
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Unknown server error');
+        return data;      // <-- return full object, not just data.result
+      });
 
       const responseData = await toast.promise(fetchPromise, {
         loading: 'Looking for travel deals…',
@@ -32,7 +31,7 @@ export default function Home() {
         error: 'Something went wrong. Please try again.',
       });
 
-      sessionStorage.setItem('flighthacked_result', JSON.stringify(responseData));
+      sessionStorage.setItem('flighthacked_result', JSON.stringify(responseData))
       sessionStorage.setItem('flighthacked_input', input);
       router.push(`/${lang}/results`);
     } catch (error) {
@@ -65,9 +64,8 @@ export default function Home() {
             />
             <button
               onClick={handleSearch}
-              className={`bg-[#007BFF] hover:bg-[#005fcc] text-white font-semibold px-4 py-3 rounded transition ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`bg-[#007BFF] hover:bg-[#005fcc] text-white font-semibold px-4 py-3 rounded transition ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               disabled={loading}
             >
               {loading ? t.loading : t.search}

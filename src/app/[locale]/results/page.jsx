@@ -15,29 +15,31 @@ export default function ResultsPage() {
   const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('flighthacked_result');
-    if (!stored) {
-      toast.error('No results found. Please start a new search.');
-      router.push(`/${lang}`);
-      return;
-    }
+  const stored = sessionStorage.getItem('flighthacked_result');
+  if (!stored) {
+    toast.error('No results found. Please start a new search.');
+    router.push(`/${lang}`);
+    return;
+  }
 
-    try {
-      const parsed = JSON.parse(stored);
-      setResults(parsed.result || []);
-      setRouteInfo({
-        from: parsed.from,
-        to: parsed.to,
-        departDate: parsed.departDate,
-        returnDate: parsed.returnDate,
-      });
-    } catch {
-      toast.error('Invalid results format.');
-      router.push(`/${lang}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [router, lang]);
+  let parsed;
+  try {
+    parsed = JSON.parse(stored);
+  } catch {
+    toast.error('Error parsing results.');
+    router.push(`/${lang}`);
+    return;
+  }
+
+  // parsed is { result, from, to, departDate, returnDate }
+  setResults(parsed.result || []);
+  setRouteInfo({
+    from: parsed.from,
+    to: parsed.to,
+    departDate: parsed.departDate,
+    returnDate: parsed.returnDate,
+  });
+}, [router, lang]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
