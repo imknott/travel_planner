@@ -55,7 +55,7 @@ export default function ResultsPage() {
       const newResult = data.result || '';
       sessionStorage.setItem('flighthacked_result', newResult);
   
-      const cardTexts = stored
+      const cardTexts = newResult
       .split(/\d\.\s|✈️/)
       .map((card) => card.trim())
       .filter((card) => typeof card === 'string' && card.length > 0);
@@ -159,12 +159,16 @@ export default function ResultsPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4 justify-center mt-8">
-        <a
-          href={`/${lang}`}
+        <button
+          onClick={() => {
+            sessionStorage.clear();
+            router.push(`/${lang}`);
+          }}
           className="inline-block px-5 py-2 bg-[#007BFF] hover:bg-[#005fcc] text-white rounded transition text-sm"
         >
           🔁 {t.searchAgain || 'Search Again'}
-        </a>
+        </button>
+
         <a
           href="#"
           className="inline-block px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition text-sm"

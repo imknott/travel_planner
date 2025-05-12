@@ -11,7 +11,7 @@ export default function Footer() {
       </div>
       <div className="flex gap-4 justify-center">
         <a
-          href="https://instagram.com/YOUR_HANDLE"
+          href="https://instagram.com/flighthacked"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-pink-500"
@@ -27,7 +27,7 @@ export default function Footer() {
           <FaGithub size={18} />
         </a>
         <a
-          href="mailto:support@flighthacked.com"
+          href="mailto:support_team@flighthacked.com"
           className="hover:text-blue-500"
         >
           <FaEnvelope size={18} />

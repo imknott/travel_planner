@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import admin from 'firebase-admin';
-import { getAirlineUrl } from '@/lib/getAirlineUrl';
+import { getAirlineUrl } from '@/lib/getAirlineUrl'; // uses canonicalAirlineMap internally
 
-// Initialize Firestore
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -12,9 +11,8 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
 const COLLECTION = 'flight_cache';
+const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
 
 function getCacheKey(query, from) {
   return `${query.trim().toLowerCase()}|${from?.trim().toLowerCase() || ''}`;
@@ -40,76 +38,71 @@ export async function POST(req) {
       }
     }
 
-const prompt = `
-You are a travel assistant. A user will describe their travel preferences in natural language.
+    // Gemini prompt
+    const prompt = `
+You are a friendly travel assistant.
 
-Your job is to return exactly 3 realistic flight suggestions based on:
-- Departure location
-- Destination or region
-- Budget (USD)
-- Travel dates or time frame
-- Layover preferences
+A user will describe their travel preferences. They may be specific or vague (e.g., "cheap flight to Japan" or "somewhere warm in Southeast Asia").
 
-Each suggestion must be:
-- A single natural-language sentence
-- Realistic and specific (e.g., "From New York to Rome in September...")
+Your job is to return exactly 3 realistic round-trip flight suggestions. Each suggestion must:
 
-Each must include:
-• From and to cities
-• Rough travel dates (e.g. "in July" or "this fall")
-• Approximate price in USD
-• Airline name(s) — only use real airlines (like Delta, United, Emirates, Lufthansa, etc.)
-• A single "Book here" link at the end of the sentence (not inline)
+- Start with a number (1., 2., 3.)
+- Be a single concise sentence including:
+  - From and to location
+  - Month/season
+  - Estimated round-trip price (USD)
+  - 1–2 real airline names
+- Followed by a line that says: "Book here: [link]"
 
-⚠️ Output Rules:
-- No markdown, brackets, colons, or code formatting
-- Do not use placeholder URLs
-- Use only 1 sentence per suggestion, followed by "Book here: [airline link]"
+⚠️ Do NOT include JSON, markdown, brackets, raw URLs inside the sentence, or fake airlines.
 
 Examples:
 
-1. From New York to Tokyo in August — Around $950 round-trip on United Airlines or ANA. Book here: https://www.united.com  
-2. From Lisbon to Toronto this fall — About $550 round-trip on TAP or Air Canada. Book here: https://www.flytap.com
+1. From NYC to Tokyo in July — Around $900 round-trip on ANA or United.  
+Book here: https://www.ana.co.jp
+
+2. From LA to Bangkok in August — About $850 round-trip on EVA Air or Qatar Airways.  
+Book here: https://www.evaair.com
+
+3. From San Francisco to Hanoi this fall — Roughly $760 round-trip on Vietnam Airlines.  
+Book here: https://www.vietnamairlines.com
 
 User is flying from: "${from || 'unknown location'}"  
 User query: "${userQuery}"
 `;
-
 
     const response = await ai.models.generateContent({
       model: 'gemini-1.5-pro',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 
-    const outputText =
-      response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const rawOutput = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-    const linkedText = outputText.replace(/Book here:.*?$/gim, (line, index) => {
-      const match = outputText
+    // Replace Book here: lines with clean mapped links
+    const cleaned = rawOutput.replace(/Book here:.*?$/gim, (line, index) => {
+      const match = rawOutput
         .split('\n')[index]
-        ?.match(/on ([^.]+?)\.? Book here:/i);
+        ?.match(/on ([^.]+?)\.?$/i); // match airline name(s) before Book here
 
       if (!match || match.length < 2) return line;
 
       const airlineNames = match[1].split(/,|or|and/i).map(n => n.trim());
       const airlineLink = getAirlineUrl(airlineNames[0]);
-
       return airlineLink ? `Book here: ${airlineLink}` : line;
     });
 
     await docRef.set({
-      result: linkedText,
+      result: cleaned,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ result: linkedText, cached: false });
+    return NextResponse.json({ result: cleaned, cached: false });
   } catch (err) {
     console.error('❌ /api/search error:', {
       message: err.message,
       stack: err.stack,
       details: err,
     });
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
