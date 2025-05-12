@@ -18,7 +18,7 @@ export async function GET(req) {
   // 4) History via Wikipedia (optional)
   const wiki = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`);
   const { extract } = await wiki.json();
-
+  
   return NextResponse.json({
     photos,
     activities,
