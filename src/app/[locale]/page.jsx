@@ -1,50 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { translations } from '@/lib/translations';
 import { useLanguage } from '@/context/LanguageContext';
-
 
 export default function Home() {
   const [input, setInput] = useState('');
-  const [from, setFrom] = useState('');
-  const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { lang, t, translate } = useLanguage();
-
+  const { lang, t } = useLanguage();
 
   const handleSearch = async () => {
+    if (!input.trim()) return;
     setLoading(true);
     try {
       const fetchPromise = fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userQuery: input, from }),
+        body: JSON.stringify({ userQuery: input }),
       })
         .then(async (res) => {
           const text = await res.text();
-          if (!res.ok) {
-            throw new Error(text || 'Unknown server error');
-          }
-          const data = JSON.parse(text);
-          return data.result || data;
-        });      
+          if (!res.ok) throw new Error(text || 'Unknown server error');
+          return JSON.parse(text);
+        });
 
-      const assistantResponse = await toast.promise(fetchPromise, {
-        loading: 'Looking for flights…',
-        success: 'Flights found! Redirecting…',
+      const responseData = await toast.promise(fetchPromise, {
+        loading: 'Looking for travel deals…',
+        success: 'Options found! Redirecting…',
         error: 'Something went wrong. Please try again.',
       });
 
-      sessionStorage.setItem('flighthacked_result', assistantResponse);
+      sessionStorage.setItem('flighthacked_result', JSON.stringify(responseData));
       sessionStorage.setItem('flighthacked_input', input);
-      sessionStorage.setItem('flighthacked_from', from);
       router.push(`/${lang}/results`);
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error('❌ Fetch error:', error);
     } finally {
       setLoading(false);
     }
@@ -61,20 +53,12 @@ export default function Home() {
         <div className="bg-black/70 dark:bg-black/80 p-8 rounded-lg shadow-lg text-center w-full max-w-2xl mt-24">
           <h1 className="text-3xl sm:text-5xl font-bold mb-6">{t.tagline}</h1>
 
-          {/* Inputs */}
+          {/* Input */}
           <div className="flex flex-col gap-3">
             <input
               className="p-3 rounded bg-white text-black placeholder-gray-500"
               type="text"
-              placeholder="Where are you flying from?"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              disabled={loading}
-            />
-            <input
-              className="p-3 rounded bg-white text-black placeholder-gray-500"
-              type="text"
-              placeholder={t.placeholder}
+              placeholder={t.placeholder || "e.g., I want a flight to Tokyo in August for 7 days with hotel"}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
@@ -118,15 +102,6 @@ export default function Home() {
           <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">{t.popular}</p>
         </div>
       </section>
-
-      {/* Result Preview */}
-      <main className="max-w-3xl mx-auto mt-10 p-4">
-        {result && (
-          <pre className="bg-slate-100 dark:bg-slate-800 p-4 rounded whitespace-pre-wrap">
-            {result}
-          </pre>
-        )}
-      </main>
     </div>
   );
 }

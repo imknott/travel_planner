@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import admin from 'firebase-admin';
-import { getAirlineUrl } from '@/lib/getAirlineUrl'; // uses canonicalAirlineMap internally
+import { getFlightsSky } from '@/lib/flightsSky';
+import { mapToIATA } from '@/lib/iataMap';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -14,19 +15,15 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const COLLECTION = 'flight_cache';
 const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
 
-function getCacheKey(query, from) {
-  return `${query.trim().toLowerCase()}|${from?.trim().toLowerCase() || ''}`;
-}
-
 export async function POST(req) {
   try {
-    const { userQuery, from } = await req.json();
+    const { userQuery } = await req.json();
 
     if (!userQuery || typeof userQuery !== 'string') {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
-    const cacheKey = getCacheKey(userQuery, from);
+    const cacheKey = userQuery.toLowerCase().trim();
     const docRef = db.collection(COLLECTION).doc(cacheKey);
     const doc = await docRef.get();
 
@@ -38,65 +35,70 @@ export async function POST(req) {
       }
     }
 
-    // Gemini prompt
-    const prompt = `
-You are a friendly travel assistant.
+    // Step 1: Use Gemini to parse the user's query into structured data
+    const parsePrompt = `
+Extract the following travel query into structured JSON.
 
-A user will describe their travel preferences. They may be specific or vague (e.g., "cheap flight to Japan" or "somewhere warm in Southeast Asia").
+Fields:
+- from: departure city or airport
+- to: destination (city, country, or region)
+- startDate: best estimate (YYYY-MM-DD or null)
+- durationDays: number of days for trip
+- includeFlight: true/false
+- includeHotel: true/false
+- includeCar: true/false
 
-Your job is to return exactly 3 realistic round-trip flight suggestions. Each suggestion must:
-
-- Start with a number (1., 2., 3.)
-- Be a single concise sentence including:
-  - From and to location
-  - Month/season
-  - Estimated round-trip price (USD)
-  - 1–2 real airline names
-- Followed by a line that says: "Book here: [link]"
-
-⚠️ Do NOT include JSON, markdown, brackets, raw URLs inside the sentence, or fake airlines.
-
-Examples:
-
-1. From NYC to Tokyo in July — Around $900 round-trip on ANA or United.  
-Book here: https://www.ana.co.jp
-
-2. From LA to Bangkok in August — About $850 round-trip on EVA Air or Qatar Airways.  
-Book here: https://www.evaair.com
-
-3. From San Francisco to Hanoi this fall — Roughly $760 round-trip on Vietnam Airlines.  
-Book here: https://www.vietnamairlines.com
-
-User is flying from: "${from || 'unknown location'}"  
-User query: "${userQuery}"
+Query: "${userQuery}"
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    const parseResult = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: parsePrompt }] }],
     });
 
-    const rawOutput = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const json = parseResult?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const {
+      from,
+      to,
+      startDate,
+      durationDays,
+      includeFlight = true
+    } = JSON.parse(json);
 
-    // Replace Book here: lines with clean mapped links
-    const cleaned = rawOutput.replace(/Book here:.*?$/gim, (line, index) => {
-      const match = rawOutput
-        .split('\n')[index]
-        ?.match(/on ([^.]+?)\.?$/i); // match airline name(s) before Book here
+    if (!from || !to || !startDate) {
+      return NextResponse.json({ error: 'Missing required travel info' }, { status: 400 });
+    }
 
-      if (!match || match.length < 2) return line;
+    const origin = await mapToIATA(from);
+    const destination = await mapToIATA(to);
+    if (!origin || !destination) {
+      return NextResponse.json({ error: 'Could not resolve locations to airport codes' }, { status: 400 });
+    }
 
-      const airlineNames = match[1].split(/,|or|and/i).map(n => n.trim());
-      const airlineLink = getAirlineUrl(airlineNames[0]);
-      return airlineLink ? `Book here: ${airlineLink}` : line;
-    });
+    const tripLength = Number(durationDays) || 7;
+    const returnDate = getReturnDate(startDate, tripLength);
 
+    // Step 2: Use Flights-Sky API to get flights
+    const flights = includeFlight
+      ? await getFlightsSky({ from: origin, to: destination, departDate: startDate, returnDate })
+      : [];
+
+    const topResults = flights.slice(0, 3); // limit to 3 cards
+
+    // Cache the result
     await docRef.set({
-      result: cleaned,
+      result: topResults,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ result: cleaned, cached: false });
+    return NextResponse.json({
+      result: topResults,
+      from: origin,
+      to: destination,
+      departDate: startDate,
+      returnDate: returnDate || null,
+      cached: false,
+    });
   } catch (err) {
     console.error('❌ /api/search error:', {
       message: err.message,
@@ -105,4 +107,10 @@ User query: "${userQuery}"
     });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+function getReturnDate(start, days) {
+  const d = new Date(start);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
 }

@@ -4,17 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/context/LanguageContext';
-import { linkifyAirlinesWithPills } from '@/lib/utils';
 import GoogleAds from '@/components/googleAds';
 
 export default function ResultsPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
-
-  const [translatedCards, setTranslatedCards] = useState([]);
+  const [results, setResults] = useState([]);
+  const [routeInfo, setRouteInfo] = useState({});
+  const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
-  const [refinedDates, setRefinedDates] = useState({});
-  const [loadingDates, setLoadingDates] = useState({});
 
   useEffect(() => {
     const stored = sessionStorage.getItem('flighthacked_result');
@@ -23,126 +21,127 @@ export default function ResultsPage() {
       router.push(`/${lang}`);
       return;
     }
-  
-    const cardTexts = stored
-      .split(/\d\.\s|✈️/)
-      .map((card) => card.trim())
-      .filter((card) => typeof card === 'string' && card.length > 0);
 
-    setTranslatedCards(cardTexts); // No translation needed
-  }, [router]);
-  
+    try {
+      const parsed = JSON.parse(stored);
+      setResults(parsed.result || []);
+      setRouteInfo({
+        from: parsed.from,
+        to: parsed.to,
+        departDate: parsed.departDate,
+        returnDate: parsed.returnDate,
+      });
+    } catch {
+      toast.error('Invalid results format.');
+      router.push(`/${lang}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [router, lang]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
     const input = sessionStorage.getItem('flighthacked_input');
-    const from = sessionStorage.getItem('flighthacked_from');
-  
     if (!input) {
       toast.error('Missing previous search input.');
       setRegenerating(false);
       return;
     }
-  
+
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userQuery: input, from }),
+        body: JSON.stringify({ userQuery: input }),
       });
-  
       const data = await res.json();
-      const newResult = data.result || '';
-      sessionStorage.setItem('flighthacked_result', newResult);
-  
-      const cardTexts = newResult
-      .split(/\d\.\s|✈️/)
-      .map((card) => card.trim())
-      .filter((card) => typeof card === 'string' && card.length > 0);
-  
-      setTranslatedCards(cardTexts); // No re-translation needed
-    } catch (error) {
+      sessionStorage.setItem('flighthacked_result', JSON.stringify(data));
+      setResults(data.result || []);
+      setRouteInfo({
+        from: data.from,
+        to: data.to,
+        departDate: data.departDate,
+        returnDate: data.returnDate,
+      });
+    } catch {
       toast.error('Failed to regenerate suggestions.');
     } finally {
       setRegenerating(false);
     }
   };
-  
 
-  const handleRefineDates = async (cardIndex, cardText) => {
-    setLoadingDates((prev) => ({ ...prev, [cardIndex]: true }));
-
-    try {
-      const res = await fetch('/api/refinedates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardText }),
-      });
-
-      const data = await res.json();
-      setRefinedDates((prev) => ({ ...prev, [cardIndex]: data.dates }));
-    } catch (err) {
-      toast.error('Could not refine dates for this trip.');
-    } finally {
-      setLoadingDates((prev) => ({ ...prev, [cardIndex]: false }));
-    }
-  };
-
-  if (!translatedCards.length) {
+  if (loading) {
     return (
       <div className="min-h-screen pt-24 px-4 text-center text-lg">
-        {t.loading || 'Translating results...'}
+        {t.loading || 'Fetching travel packages...'}
       </div>
     );
   }
 
+  // Group by airline
+  const grouped = results.reduce((acc, flight) => {
+    const key = flight.airline || 'Other';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(flight);
+    return acc;
+  }, {});
+
+  const isRoundTrip = Boolean(routeInfo.returnDate);
+
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-3xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
       <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
-        {t.tripSummary || 'Your flight suggestions'}
+        {t.tripSummary || 'Your trip options'}
       </h1>
 
-      <div className="space-y-6">
-        {translatedCards.map((card, index) => {
-          const { jsx, hasMultipleAirlines } = linkifyAirlinesWithPills(card);
+      {Object.entries(grouped).map(([airline, flights]) => (
+        <div key={airline}>
+          <h2 className="text-xl font-semibold mt-8 mb-4 text-gray-700 dark:text-gray-300">
+            {airline}
+          </h2>
 
-          return (
-            <div
-              key={index}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-lg shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-[1.01]"
-            >
-              <h2 className="text-lg font-semibold mb-2 text-[#007BFF]">
-                ✈️ {t.tripOption || 'Trip Option'} {index + 1}
-              </h2>
-
-              <div className="text-sm leading-relaxed space-y-2">{jsx}</div>
-
-              {hasMultipleAirlines && (
-                <span className="inline-block mt-2 text-xs text-yellow-700 bg-yellow-100 dark:bg-yellow-800 dark:text-yellow-300 px-2 py-1 rounded">
-                  🧩 Multiple Airlines
-                </span>
-              )}
-
-              <button
-                onClick={() => handleRefineDates(index, card)}
-                disabled={loadingDates[index]}
-                className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+          <div className="space-y-6">
+            {flights.map((flight, idx) => (
+              <div
+                key={idx}
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-lg shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-[1.01]"
               >
-                {loadingDates[index]
-                  ? t.refiningDates || 'Refining dates…'
-                  : t.refineDates || 'Get exact travel dates'}
-              </button>
-
-              {refinedDates[index] && (
-                <div className="mt-3 text-sm bg-blue-50 dark:bg-slate-700 p-2 rounded border border-blue-200 dark:border-slate-600">
-                  📅 <strong>{t.suggestedDates || 'Suggested Dates'}:</strong>{' '}
-                  {refinedDates[index]}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-semibold text-blue-600">
+                    {routeInfo.from} → {routeInfo.to}
+                  </span>
+                  <span className="text-xl">
+                    {isRoundTrip ? '🔁' : '➡️'}
+                  </span>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+
+                <p className="text-sm mb-1">
+                  <strong>Price:</strong> {flight.price}
+                </p>
+                <p className="text-sm mb-1">
+                  <strong>Dates:</strong>{' '}
+                  {routeInfo.departDate} → {routeInfo.returnDate || 'One-way'}
+                </p>
+                {flight.duration && (
+                  <p className="text-sm mb-1">
+                    <strong>Duration:</strong> {flight.duration}
+                  </p>
+                )}
+                {flight.link && (
+                  <a
+                    href={flight.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-3 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 transition"
+                  >
+                    {t.bookNow || 'Book Now'}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Regenerate Button */}
       <div className="mt-10 flex justify-center">
@@ -153,7 +152,7 @@ export default function ResultsPage() {
         >
           {regenerating
             ? t.regenerating || 'Regenerating...'
-            : t.tryAgain || 'Not what you’re looking for? Try again'}
+            : t.tryAgain || 'Try again'}
         </button>
       </div>
 
@@ -168,13 +167,6 @@ export default function ResultsPage() {
         >
           🔁 {t.searchAgain || 'Search Again'}
         </button>
-
-        <a
-          href="#"
-          className="inline-block px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition text-sm"
-        >
-          🛒 {t.bookFlights || 'Book Flights (Coming Soon)'}
-        </a>
       </div>
 
       <div className="mt-10">
