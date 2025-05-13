@@ -36,9 +36,10 @@ export async function POST(req) {
 
     // ─── Step 1: Parse the query via your parse-query API ───────────────
     const parseRes = await fetch(
-      new URL('/api/parse-query', process.env.BASE_URL),
+      `${process.env.BASE_URL}/api/parse-query`,
       {
         method: 'POST',
+        'x-internal-secret': process.env.INTERNAL_SECRET,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userQuery }),
       }

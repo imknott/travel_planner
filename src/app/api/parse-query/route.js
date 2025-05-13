@@ -5,6 +5,10 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(req) {
+  const secret = req.headers.get('x-internal-secret');
+  if (secret !== process.env.INTERNAL_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
   try {
     const { query } = await req.json();
     if (!query || typeof query !== 'string') {
