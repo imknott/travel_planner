@@ -29,9 +29,20 @@ export async function POST(req) {
       return NextResponse.json({ result: doc.data().result, cached: true });
     }
 
-    // ─── Gemini Prompt ───────────────────────────────────────────────
+    // ─── Gemini prompt ───────────────────────────────────────────────
     const prompt = `
-You are a professional travel planner. Given a user's request, extract exactly and only the following fields in this format. If there are multiple destinations or months, include them comma-separated. Always return these 7 lines:
+You are a professional travel planner. Given a user's message, extract the following fields line-by-line.
+
+If the user provides multiple destinations or months, return them as comma-separated values.  
+If a field is missing, return "null".  
+If dates are vague (like "fall", "later this year", or "next few months"), guess and return specific months (e.g., "2025-10").
+
+If nothing is said about duration, assume 7 days. If nothing is said about flights/hotels/cars, assume:
+- Include Flight: true
+- Include Hotel: false
+- Include Car: false
+
+ALWAYS return exactly these 7 lines:
 
 From: <departure city or airport>
 Destinations: <comma-separated destinations>
@@ -41,8 +52,7 @@ Include Flight: <true|false>
 Include Hotel: <true|false>
 Include Car: <true|false>
 
-If a value is missing, return "null".
-User query:
+Now extract the fields from this user message:
 \`\`\`
 ${userQuery}
 \`\`\`
@@ -60,7 +70,6 @@ ${userQuery}
     const lines = rawText.replace(/```/g, '').split('\n').map(l => l.trim()).filter(Boolean);
     console.log('🧾 Gemini raw lines:', lines);
 
-    // ─── Parse response ─────────────────────────────────────────────
     const fields = {
       from: null,
       destinations: [],
@@ -99,6 +108,18 @@ ${userQuery}
       }
     }
 
+    // ─── Fallback for months if missing ─────────────────────────────
+    if (!fields.months.length) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      fields.months = [
+        `${y}-${String(m + 1).padStart(2, '0')}`,
+        `${m === 11 ? y + 1 : y}-${String((m + 2) % 12 || 12).padStart(2, '0')}`,
+      ];
+      console.log('⚠️ Months not parsed — defaulting to:', fields.months);
+    }
+
     console.log('✅ Parsed fields:', fields);
 
     const {
@@ -117,14 +138,17 @@ ${userQuery}
 
     const originIATA = await mapToIATA(from);
     if (!originIATA) {
-      return NextResponse.json({ error: 'Could not resolve origin airport code' }, { status: 400 });
+      return NextResponse.json({ error: `Could not resolve origin airport for "${from}"` }, { status: 400 });
     }
 
     const results = [];
 
     for (const dest of destinations) {
       const destinationIATA = await mapToIATA(dest);
-      if (!destinationIATA) continue;
+      if (!destinationIATA) {
+        console.warn(`⚠️ No IATA found for destination: "${dest}"`);
+        continue;
+      }
 
       for (const month of months) {
         const [year, monthNum] = month.split('-').map(Number);
@@ -148,13 +172,13 @@ ${userQuery}
               results.push({
                 from: originIATA,
                 to: destinationIATA,
+                destination: dest,
                 departDate,
                 returnDate: returnDateStr,
-                destination: dest,
                 options: flights.slice(0, 3),
               });
             } catch (e) {
-              console.warn(`❌ Flights failed for ${dest} on ${departDate}`, e);
+              console.warn(`❌ Flights fetch failed for ${dest} on ${departDate}:`, e);
             }
           }
         }

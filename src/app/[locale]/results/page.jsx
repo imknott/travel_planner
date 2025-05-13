@@ -16,7 +16,6 @@ export default function ResultsPage() {
   const [priceFilter, setPriceFilter] = useState(null);
   const [directOnly, setDirectOnly] = useState(false);
 
-  // ─── Load results from sessionStorage ────────────────────────────────
   useEffect(() => {
     const stored = sessionStorage.getItem('flighthacked_result');
     if (!stored) {
@@ -28,10 +27,7 @@ export default function ResultsPage() {
     try {
       const parsed = JSON.parse(stored);
       setResults(parsed.results || []);
-      setRouteInfo({
-        from: parsed.from,
-        to: parsed.to,
-      });
+      setRouteInfo({ from: parsed.from });
     } catch {
       toast.error('Error parsing results.');
       router.push(`/${lang}`);
@@ -40,7 +36,6 @@ export default function ResultsPage() {
     }
   }, [router, lang]);
 
-  // ─── Regenerate new search results ───────────────────────────────────
   const handleRegenerate = async () => {
     setRegenerating(true);
     const input = sessionStorage.getItem('flighthacked_input');
@@ -59,7 +54,7 @@ export default function ResultsPage() {
       const data = await res.json();
       sessionStorage.setItem('flighthacked_result', JSON.stringify(data));
       setResults(data.results || []);
-      setRouteInfo({ from: data.from, to: data.to });
+      setRouteInfo({ from: data.from });
     } catch {
       toast.error('Failed to regenerate suggestions.');
     } finally {
@@ -67,7 +62,6 @@ export default function ResultsPage() {
     }
   };
 
-  // ─── Filter by price & direct toggle ─────────────────────────────────
   const filterFlights = (flights) => {
     return flights.filter((flight) => {
       const price = parseFloat(flight.price?.replace(/[^\d.]/g, '')) || 0;
@@ -85,14 +79,21 @@ export default function ResultsPage() {
     );
   }
 
+  // ─── Group results by destination ─────────────────────────────
+  const groupedByDestination = results.reduce((acc, entry) => {
+    if (!entry.destination) return acc;
+    if (!acc[entry.destination]) acc[entry.destination] = [];
+    acc[entry.destination].push(entry);
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-4xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
-      {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
         {t.tripSummary || 'Your trip options'}
       </h1>
 
-      {/* ─── Filters UI ─────────────────────────────────────────────── */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center mb-6 text-sm">
         <label>
           💰 Max Price:{' '}
@@ -113,113 +114,114 @@ export default function ResultsPage() {
         </label>
       </div>
 
-      {/* ─── Flight Groups ───────────────────────────────────────────── */}
-      {results.length === 0 ? (
-        <p className="text-center text-slate-500">No travel packages found.</p>
-      ) : (
-        results.map(({ departDate, returnDate, options }, idx) => {
-          if (!options?.length) return null;
+      {/* Grouped Results */}
+      {Object.entries(groupedByDestination).map(([destination, trips], idx) => (
+        <div key={idx} className="mb-12">
+          <h2 className="text-2xl font-bold text-blue-600 mb-2">
+            ✈️ {routeInfo.from} → {destination}
+          </h2>
 
-          // Normalize price/duration for sorting & badges
-          const cleanFlights = options.map((f) => ({
-            ...f,
-            _price: parseFloat(f.price?.replace(/[^\d.]/g, '')) || 999999,
-            _durationMinutes: parseInt(f.duration?.match(/\d+/)?.[0]) || 9999,
-          }));
+          {trips.map(({ departDate, returnDate, options }, i) => {
+            if (!options?.length) return null;
 
-          // Sort by price (ascending)
-          const sorted = cleanFlights.sort((a, b) => a._price - b._price);
+            // Normalize data
+            const cleanFlights = options.map((f) => ({
+              ...f,
+              _price: parseFloat(f.price?.replace(/[^\d.]/g, '')) || 999999,
+              _durationMinutes: parseInt(f.duration?.match(/\d+/)?.[0]) || 9999,
+              stops: f.stops ?? 0,
+              airline: f.airline || 'Unknown',
+            }));
 
-          // Identify "best" badges
-          const bestValue = sorted[0];
-          const fastest = sorted.reduce((a, b) =>
-            a._durationMinutes < b._durationMinutes ? a : b
-          );
+            const sorted = cleanFlights.sort((a, b) => a._price - b._price);
+            const bestValue = sorted[0];
+            const fastest = sorted.reduce((a, b) =>
+              a._durationMinutes < b._durationMinutes ? a : b
+            );
 
-          // Apply filters
-          const filtered = sorted.filter((flight) => {
-            const passesPrice = !priceFilter || flight._price <= priceFilter;
-            const passesDirect = !directOnly || flight.stops === 0;
-            return passesPrice && passesDirect;
-          });
+            const filtered = sorted.filter((flight) => {
+              const passesPrice = !priceFilter || flight._price <= priceFilter;
+              const passesDirect = !directOnly || flight.stops === 0;
+              return passesPrice && passesDirect;
+            });
 
-          if (!filtered.length) return null;
+            if (!filtered.length) return null;
 
-          return (
-            <div key={idx} className="mb-12">
-              <h2 className="text-xl font-semibold text-blue-600 mb-4">
-                📅 {departDate} → {returnDate}
-              </h2>
+            return (
+              <div key={i} className="mt-6">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                  📅 {departDate} → {returnDate}
+                </h3>
+                <div className="space-y-4">
+                  {filtered.map((flight, index) => {
+                    const isBestValue = flight === bestValue;
+                    const isFastest = flight === fastest;
+                    const isRecommended = isBestValue && isFastest;
 
-              <div className="space-y-4">
-                {filtered.map((flight, i) => {
-                  const isBestValue = flight === bestValue;
-                  const isFastest = flight === fastest;
-                  const isRecommended = isBestValue && isFastest;
-
-                  return (
-                    <div
-                      key={i}
-                      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-lg shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-[1.01]"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-lg font-bold text-blue-600">
-                          {routeInfo.from} → {routeInfo.to}
-                        </span>
-                        <span>
-                          {flight.stops === 0 ? '🟢 Direct' : '🛑 Layover'}
-                        </span>
-                      </div>
-
-                      <p className="text-sm mb-1">
-                        <strong>Price:</strong> {flight.price}{' '}
-                        {isRecommended && (
-                          <span className="bg-purple-200 text-purple-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                            ⭐ Recommended
+                    return (
+                      <div
+                        key={index}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-lg shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-[1.01]"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-lg font-bold text-blue-600">
+                            {routeInfo.from} → {destination}
                           </span>
-                        )}
-                        {!isRecommended && isBestValue && (
-                          <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                            💰 Best Value
+                          <span>
+                            {flight.stops === 0 ? '🟢 Direct' : '🛑 Layover'}
                           </span>
-                        )}
-                      </p>
+                        </div>
 
-                      <p className="text-sm mb-1">
-                        <strong>Airline:</strong> {flight.airline || 'Unknown'}
-                      </p>
-
-                      {flight.duration && (
                         <p className="text-sm mb-1">
-                          <strong>Duration:</strong> {flight.duration}{' '}
-                          {!isRecommended && isFastest && (
-                            <span className="bg-yellow-200 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                              ⚡ Fastest
+                          <strong>Price:</strong> {flight.price}{' '}
+                          {isRecommended && (
+                            <span className="bg-purple-200 text-purple-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
+                              ⭐ Recommended
+                            </span>
+                          )}
+                          {!isRecommended && isBestValue && (
+                            <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
+                              💰 Best Value
                             </span>
                           )}
                         </p>
-                      )}
 
-                      {flight.link && (
-                        <a
-                          href={flight.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-3 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 transition"
-                        >
-                          {t.bookNow || 'Book Now'}
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
+                        <p className="text-sm mb-1">
+                          <strong>Airline:</strong> {flight.airline}
+                        </p>
+
+                        {flight.duration && (
+                          <p className="text-sm mb-1">
+                            <strong>Duration:</strong> {flight.duration}{' '}
+                            {!isRecommended && isFastest && (
+                              <span className="bg-yellow-200 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
+                                ⚡ Fastest
+                              </span>
+                            )}
+                          </p>
+                        )}
+
+                        {flight.link && (
+                          <a
+                            href={flight.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-3 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 transition"
+                          >
+                            {t.bookNow || 'Book Now'}
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })
-      )}
+            );
+          })}
+        </div>
+      ))}
 
-      {/* ─── Regenerate Button ───────────────────────────────────────── */}
+      {/* Regenerate Button */}
       <div className="mt-10 flex justify-center">
         <button
           onClick={handleRegenerate}
@@ -230,7 +232,7 @@ export default function ResultsPage() {
         </button>
       </div>
 
-      {/* ─── Start Over Button ───────────────────────────────────────── */}
+      {/* Start Over */}
       <div className="flex flex-wrap gap-4 justify-center mt-8">
         <button
           onClick={() => {
@@ -243,7 +245,7 @@ export default function ResultsPage() {
         </button>
       </div>
 
-      {/* ─── Google Ads ─────────────────────────────────────────────── */}
+      {/* Google Ads */}
       <div className="mt-10">
         <GoogleAds />
       </div>
