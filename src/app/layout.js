@@ -13,7 +13,6 @@ export default function LocaleLayout({ children, params }) {
         <LanguageProvider lang={locale}>
           <Navbar />
           <main className="pt-10 px-4 min-h-screen">
-            <Toaster position="top-right" />
             {children}
           </main>
           <Footer />
