@@ -28,17 +28,22 @@ export async function getFlightsSky({ from, to, departDate, returnDate = null })
   const items = Array.isArray(json.data) ? json.data : [];
 
   return items.map((f) => {
-    const firstSegment = f.segments?.[0] || {};
-    const lastSegment = f.segments?.[f.segments.length - 1] || {};
+    const segments = f.segments || [];
+    const firstSegment = segments[0] || {};
+    const stops = segments.length > 0 ? segments.length - 1 : 0;
+
+    // Try to normalize price
+    const rawPrice = typeof f.price === 'number' ? `$${f.price.toFixed(2)}` : f.price || 'N/A';
+
+    // Normalize duration into minutes if available (optional)
+    const duration = f.duration || null;
 
     return {
-      price: f.price || 'N/A',
-      duration: f.duration || null,
-      stops: (f.segments?.length || 1) - 1,
+      price: rawPrice,
+      duration,
+      stops,
       airline: firstSegment.marketingCarrier?.name || f.airline || 'Unknown',
       link: f.deep_link || f.herf || null,
-
-      // Include raw data just in case
       raw: f,
     };
   });
