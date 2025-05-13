@@ -10,7 +10,16 @@ import { chromium } from 'playwright';
 export async function scrapeKiwiHotels(city, checkIn, checkOut) {
   const url = `https://www.kiwi.com/en/search/hotels/results?destination=${encodeURIComponent(city)}&checkin=${checkIn}&checkout=${checkOut}`;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--no-zygote'
+    ]
+  });
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-test="HotelResultCard"]', { timeout: 15000 });

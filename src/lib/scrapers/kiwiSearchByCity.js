@@ -19,7 +19,16 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
     url.searchParams.set('returnTo', returnDate);
   }
 
-  const browser = await chromium.launch({ headless: true });
+   const browser = await chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--no-zygote'
+    ]
+  });
   const page = await browser.newPage();
   await page.goto(url.toString(), { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 15000 });

@@ -10,7 +10,16 @@ import { chromium } from 'playwright';
 export async function scrapeKiwiCars(city, pickupDate, dropoffDate) {
   const url = `https://www.kiwi.com/en/search/cars/results?location=${encodeURIComponent(city)}&pickup=${pickupDate}&dropoff=${dropoffDate}`;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--no-zygote'
+    ]
+  });
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForSelector('[data-test="CarResultCard"]', { timeout: 15000 });
