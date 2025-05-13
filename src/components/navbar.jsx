@@ -13,7 +13,6 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Language state synced from URL or localStorage
   const [lang, setLang] = useState(defaultLocale);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -21,11 +20,11 @@ export default function Navbar() {
 
   useEffect(() => {
     const pathLocale = pathname.split('/')[1];
-    const isValid = supportedLocales.includes(pathLocale);
-    const stored = localStorage.getItem('flighthacked_lang');
-    const fallback = stored || defaultLocale;
+    const stored = localStorage.getItem('flighthacked_lang') || defaultLocale;
 
-    const finalLang = isValid ? pathLocale : fallback;
+    const isValid = supportedLocales.includes(pathLocale);
+    const finalLang = pathname === '/' ? stored : isValid ? pathLocale : defaultLocale;
+
     setLang(finalLang);
   }, [pathname]);
 
@@ -33,22 +32,28 @@ export default function Navbar() {
     if (newLang === lang) return;
 
     const segments = pathname.split('/');
-    segments[1] = newLang; // Replace locale
-    const newPath = segments.join('/');
+    const isValid = supportedLocales.includes(segments[1]);
+
+    const newPath = newLang === 'en'
+      ? '/' + (isValid ? segments.slice(2).join('/') : segments.slice(1).join('/'))
+      : '/' + [newLang, ...segments.slice(isValid ? 2 : 1)].join('/');
 
     localStorage.setItem('flighthacked_lang', newLang);
     setLang(newLang);
     router.push(newPath);
   };
 
+  const href = lang === 'en' ? '/' : `/${lang}`;
+
   return (
     <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm fixed top-0 left-0 w-full z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo Link */}
-        <Link href={`/${lang}`} className="flex items-center space-x-2">
-          <img src="/logo.png" alt="Logo" className="w-8 h-8" />
-          <span className="text-xl font-bold text-[#007BFF]">flighthacked.com</span>
+        <Link href={href} className="text-2xl font-extrabold leading-none tracking-tight text-[#007BFF] hover:opacity-90 transition">
+          flighthacked<span className="text-base text-slate-600 dark:text-slate-300"></span>
         </Link>
+
+
 
         {/* Controls */}
         <div className="flex items-center space-x-4">
@@ -72,7 +77,7 @@ export default function Navbar() {
             <option value="de">🇩🇪 Deutsch</option>
           </select>
 
-          {/* Mobile Menu Button (optional if you add full menu later) */}
+          {/* Mobile Menu Button (optional) */}
           <button
             className="sm:hidden text-gray-700 dark:text-white"
             onClick={() => setMenuOpen(!menuOpen)}

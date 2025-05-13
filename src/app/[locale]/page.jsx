@@ -72,11 +72,8 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Quiz Link + Spinner */}
+          {/* Spinner */}
           <div className="mt-4">
-            <a href={`/${lang}/quiz`} className="text-sm text-blue-300 hover:text-white hover:underline">
-              {t.quiz}
-            </a>
             {loading && (
               <div className="mt-4 flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white" />

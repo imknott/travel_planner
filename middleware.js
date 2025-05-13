@@ -1,14 +1,11 @@
-// middleware.js
 import { NextResponse } from 'next/server';
 
-const supportedLocales = ['en', 'es', 'fr', 'de', 'pt', 'ja', 'zh', 'hi', 'ar', 'ru'];
-const defaultLocale = 'en';
+const supportedLocales = ['en', 'es', 'fr', 'de', 'pt', 'zh', 'ja', 'hi', 'ar', 'ru'];
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
-
-  // Skip paths that are already locale-prefixed or static/API routes
   const firstSegment = pathname.split('/')[1];
+
   if (
     supportedLocales.includes(firstSegment) ||
     pathname.startsWith('/api') ||
@@ -19,20 +16,16 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Only redirect root "/"
+  // Rewrite "/" → "/en"
   if (pathname === '/') {
-    const acceptLang = request.headers.get('accept-language') || '';
-    const preferred = acceptLang.slice(0, 2).toLowerCase();
-    const locale = supportedLocales.includes(preferred) ? preferred : defaultLocale;
-
     const url = request.nextUrl.clone();
-    url.pathname = `/${locale}`;
-    return NextResponse.redirect(url);
+    url.pathname = '/en';
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|static|favicon.ico).*)'],
+  matcher: ['/', '/((?!api|_next|static|favicon.ico).*)'],
 };

@@ -1,19 +1,10 @@
 import { NextResponse } from 'next/server';
-import admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
-import { getFlightsSky } from '@/lib/flightsSky';
-import { mapToIATA } from '@/lib/iataMap';
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
-}
-const db = admin.firestore();
+import { scrapeKiwiFlights } from '@/lib/scrapers/kiwiSearchByCity';
+import { scrapeKiwiHotels } from '@/lib/scrapers/kiwiHotelScraper';
+import { scrapeKiwiCars } from '@/lib/scrapers/kiwiCarScraper';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const COLLECTION = 'flight_cache';
-const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
 
 export async function POST(req) {
   try {
@@ -22,37 +13,19 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
-    const cacheKey = encodeURIComponent(userQuery.toLowerCase().trim());
-    const docRef = db.collection(COLLECTION).doc(cacheKey);
-    const doc = await docRef.get();
-    if (doc.exists && Date.now() - doc.data().createdAt.toMillis() <= CACHE_TTL_MS) {
-      return NextResponse.json({ result: doc.data().result, cached: true });
-    }
-
-    // ─── Gemini prompt ───────────────────────────────────────────────
     const prompt = `
-You are a professional travel planner. Given a user's message, extract the following fields line-by-line.
+You are a travel planner. Extract the following fields from the user's message. If anything is missing, return "null".
 
-If the user provides multiple destinations or months, return them as comma-separated values.  
-If a field is missing, return "null".  
-If dates are vague (like "fall", "later this year", or "next few months"), guess and return specific months (e.g., "2025-10").
-
-If nothing is said about duration, assume 7 days. If nothing is said about flights/hotels/cars, assume:
-- Include Flight: true
-- Include Hotel: false
-- Include Car: false
-
-ALWAYS return exactly these 7 lines:
-
-From: <departure city or airport>
-Destinations: <comma-separated destinations>
-Months: <comma-separated YYYY-MM values>
+From: <departure city>
+Destinations: <comma-separated destination cities>
+Months: <comma-separated YYYY-MM>
 Duration (days): <integer>
 Include Flight: <true|false>
 Include Hotel: <true|false>
 Include Car: <true|false>
-
-Now extract the fields from this user message:
+Budget: <integer or null>
+Travelers: <integer or null>
+Checked Bags: <true|false>
 \`\`\`
 ${userQuery}
 \`\`\`
@@ -63,11 +36,11 @@ ${userQuery}
       contents: prompt,
     });
 
-    let rawText = typeof parseResult.text === 'function'
+    let text = typeof parseResult.text === 'function'
       ? await parseResult.text()
       : parseResult.text || parseResult?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    const lines = rawText.replace(/```/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+    const lines = text.replace(/```/g, '').split('\n').map(l => l.trim()).filter(Boolean);
     console.log('🧾 Gemini raw lines:', lines);
 
     const fields = {
@@ -78,6 +51,9 @@ ${userQuery}
       includeFlight: true,
       includeHotel: false,
       includeCar: false,
+      budget: null,
+      travelers: 1,
+      checkedBags: false,
     };
 
     for (const line of lines) {
@@ -105,10 +81,19 @@ ${userQuery}
         case 'include car':
           fields.includeCar = value === 'true';
           break;
+        case 'budget':
+          fields.budget = value !== 'null' ? parseInt(value) : null;
+          break;
+        case 'travelers':
+          fields.travelers = value !== 'null' ? parseInt(value) : 1;
+          break;
+        case 'checked bags':
+          fields.checkedBags = value === 'true';
+          break;
       }
     }
 
-    // ─── Fallback for months if missing ─────────────────────────────
+    // Fallback for months
     if (!fields.months.length) {
       const now = new Date();
       const y = now.getFullYear();
@@ -117,10 +102,7 @@ ${userQuery}
         `${y}-${String(m + 1).padStart(2, '0')}`,
         `${m === 11 ? y + 1 : y}-${String((m + 2) % 12 || 12).padStart(2, '0')}`,
       ];
-      console.log('⚠️ Months not parsed — defaulting to:', fields.months);
     }
-
-    console.log('✅ Parsed fields:', fields);
 
     const {
       from,
@@ -130,26 +112,18 @@ ${userQuery}
       includeFlight,
       includeHotel,
       includeCar,
+      travelers,
+      checkedBags,
+      budget,
     } = fields;
 
     if (!from || !destinations.length || !months.length) {
       return NextResponse.json({ error: 'Missing from, destination, or month info' }, { status: 400 });
     }
 
-    const originIATA = await mapToIATA(from);
-    if (!originIATA) {
-      return NextResponse.json({ error: `Could not resolve origin airport for "${from}"` }, { status: 400 });
-    }
-
     const results = [];
 
-    for (const dest of destinations) {
-      const destinationIATA = await mapToIATA(dest);
-      if (!destinationIATA) {
-        console.warn(`⚠️ No IATA found for destination: "${dest}"`);
-        continue;
-      }
-
+    for (const destination of destinations) {
       for (const month of months) {
         const [year, monthNum] = month.split('-').map(Number);
         const sampleDates = [3, 12, 21].map(day => new Date(year, monthNum - 1, day));
@@ -160,46 +134,59 @@ ${userQuery}
           returnDate.setDate(returnDate.getDate() + durationDays);
           const returnDateStr = returnDate.toISOString().split('T')[0];
 
-          if (includeFlight) {
-            try {
-              const flights = await getFlightsSky({
-                from: originIATA,
-                to: destinationIATA,
-                departDate,
-                returnDate: returnDateStr,
-              });
+          const entry = {
+            from,
+            destination,
+            departDate,
+            returnDate: returnDateStr,
+            travelers,
+            checkedBags,
+            flights: [],
+            hotels: [],
+            cars: [],
+            totalCost: 0,
+            perPersonCost: 0,
+          };
 
-              results.push({
-                from: originIATA,
-                to: destinationIATA,
-                destination: dest,
-                departDate,
-                returnDate: returnDateStr,
-                options: flights.slice(0, 3),
-              });
-            } catch (e) {
-              console.warn(`❌ Flights fetch failed for ${dest} on ${departDate}:`, e);
+          try {
+            let flightCost = 0;
+            let hotelCost = 0;
+            let carCost = 0;
+
+            if (includeFlight) {
+              entry.flights = await scrapeKiwiFlights(from, destination, departDate, returnDateStr);
+              flightCost = entry.flights[0] ? parseFloat(entry.flights[0].price?.replace(/[^\d.]/g, '')) * travelers : 0;
             }
+
+            if (includeHotel) {
+              entry.hotels = await scrapeKiwiHotels(destination, departDate, returnDateStr);
+              const nights = durationDays;
+              const roomsNeeded = Math.ceil(travelers / 2);
+              const nightlyRate = entry.hotels[0] ? parseFloat(entry.hotels[0].price?.replace(/[^\d.]/g, '')) : 0;
+              hotelCost = nightlyRate * nights * roomsNeeded;
+            }
+
+            if (includeCar) {
+              entry.cars = await scrapeKiwiCars(destination, departDate, returnDateStr);
+              carCost = entry.cars[0] ? parseFloat(entry.cars[0].price?.replace(/[^\d.]/g, '')) : 0;
+            }
+
+            const total = flightCost + hotelCost + carCost;
+            entry.totalCost = Math.round(total);
+            entry.perPersonCost = Math.round(total / travelers);
+
+          } catch (err) {
+            console.warn(`❌ Scraping failed for ${destination} on ${departDate}:`, err);
           }
+
+          results.push(entry);
         }
       }
     }
 
-    await docRef.set({
-      result: results,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
     return NextResponse.json({
-      from: originIATA,
-      destinations,
-      months,
-      durationDays,
-      includeFlight,
-      includeHotel,
-      includeCar,
+      ...fields,
       results,
-      cached: false,
     });
   } catch (err) {
     console.error('❌ /api/search error:', err);

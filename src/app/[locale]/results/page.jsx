@@ -12,9 +12,7 @@ export default function ResultsPage() {
   const [results, setResults] = useState([]);
   const [routeInfo, setRouteInfo] = useState({});
   const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
-  const [priceFilter, setPriceFilter] = useState(null);
-  const [directOnly, setDirectOnly] = useState(false);
+  const [budget, setBudget] = useState(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('flighthacked_result');
@@ -27,7 +25,13 @@ export default function ResultsPage() {
     try {
       const parsed = JSON.parse(stored);
       setResults(parsed.results || []);
-      setRouteInfo({ from: parsed.from });
+      setRouteInfo({
+        from: parsed.from,
+        travelers: parsed.travelers || 1,
+        checkedBags: parsed.checkedBags || false,
+        budget: parsed.budget || null,
+      });
+      if (parsed.budget) setBudget(Number(parsed.budget));
     } catch {
       toast.error('Error parsing results.');
       router.push(`/${lang}`);
@@ -36,40 +40,8 @@ export default function ResultsPage() {
     }
   }, [router, lang]);
 
-  const handleRegenerate = async () => {
-    setRegenerating(true);
-    const input = sessionStorage.getItem('flighthacked_input');
-    if (!input) {
-      toast.error('Missing previous search input.');
-      setRegenerating(false);
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userQuery: input }),
-      });
-      const data = await res.json();
-      sessionStorage.setItem('flighthacked_result', JSON.stringify(data));
-      setResults(data.results || []);
-      setRouteInfo({ from: data.from });
-    } catch {
-      toast.error('Failed to regenerate suggestions.');
-    } finally {
-      setRegenerating(false);
-    }
-  };
-
-  const filterFlights = (flights) => {
-    return flights.filter((flight) => {
-      const price = parseFloat(flight.price?.replace(/[^\d.]/g, '')) || 0;
-      const passesPrice = !priceFilter || price <= priceFilter;
-      const passesDirect = !directOnly || flight.stops === 0;
-      return passesPrice && passesDirect;
-    });
-  };
+  const formatMoney = (amount) =>
+    `$${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
 
   if (loading) {
     return (
@@ -79,174 +51,119 @@ export default function ResultsPage() {
     );
   }
 
-  // ─── Group results by destination ─────────────────────────────
-  const groupedByDestination = results.reduce((acc, entry) => {
-    if (!entry.destination) return acc;
-    if (!acc[entry.destination]) acc[entry.destination] = [];
-    acc[entry.destination].push(entry);
-    return acc;
-  }, {});
-
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-4xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
       <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
-        {t.tripSummary || 'Your trip options'}
+        {t.tripSummary || 'Your travel packages'}
       </h1>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-center mb-6 text-sm">
-        <label>
-          💰 Max Price:{' '}
-          <input
-            type="number"
-            placeholder="e.g. 800"
-            className="px-2 py-1 border rounded text-black"
-            onChange={(e) => setPriceFilter(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={directOnly}
-            onChange={(e) => setDirectOnly(e.target.checked)}
-          />
-          ✈️ Direct Flights Only
-        </label>
-      </div>
+      {results.map((pkg, idx) => {
+        const {
+          from,
+          destination,
+          departDate,
+          returnDate,
+          travelers,
+          checkedBags,
+          flights,
+          hotels,
+          cars,
+          totalCost,
+          perPersonCost,
+        } = pkg;
 
-      {/* Grouped Results */}
-      {Object.entries(groupedByDestination).map(([destination, trips], idx) => (
-        <div key={idx} className="mb-12">
-          <h2 className="text-2xl font-bold text-blue-600 mb-2">
-            ✈️ {routeInfo.from} → {destination}
-          </h2>
+        const flight = flights?.[0];
+        const hotel = hotels?.[0];
+        const car = cars?.[0];
 
-          {trips.map(({ departDate, returnDate, options }, i) => {
-            if (!options?.length) return null;
+        const budgetNote = budget
+          ? totalCost > budget
+            ? `❌ $${totalCost} / $${budget} → $${totalCost - budget} over`
+            : `✅ $${totalCost} / $${budget} → within budget`
+          : `Total cost: ${formatMoney(totalCost)}`;
 
-            // Normalize data
-            const cleanFlights = options.map((f) => ({
-              ...f,
-              _price: parseFloat(f.price?.replace(/[^\d.]/g, '')) || 999999,
-              _durationMinutes: parseInt(f.duration?.match(/\d+/)?.[0]) || 9999,
-              stops: f.stops ?? 0,
-              airline: f.airline || 'Unknown',
-            }));
+        return (
+          <div
+            key={idx}
+            className="mb-10 border rounded-lg p-5 bg-white dark:bg-slate-800 shadow"
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-semibold text-blue-600">
+                ✈ {from} → {destination}
+              </h2>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {budgetNote}
+              </span>
+            </div>
 
-            const sorted = cleanFlights.sort((a, b) => a._price - b._price);
-            const bestValue = sorted[0];
-            const fastest = sorted.reduce((a, b) =>
-              a._durationMinutes < b._durationMinutes ? a : b
-            );
+            <p className="text-sm mb-1">
+              <strong>Dates:</strong> {departDate} → {returnDate}
+            </p>
+            <p className="text-sm mb-1">
+              <strong>Travelers:</strong> {travelers}
+              {checkedBags ? ' · Includes checked bags' : ''}
+            </p>
 
-            const filtered = sorted.filter((flight) => {
-              const passesPrice = !priceFilter || flight._price <= priceFilter;
-              const passesDirect = !directOnly || flight.stops === 0;
-              return passesPrice && passesDirect;
-            });
-
-            if (!filtered.length) return null;
-
-            return (
-              <div key={i} className="mt-6">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                  📅 {departDate} → {returnDate}
-                </h3>
-                <div className="space-y-4">
-                  {filtered.map((flight, index) => {
-                    const isBestValue = flight === bestValue;
-                    const isFastest = flight === fastest;
-                    const isRecommended = isBestValue && isFastest;
-
-                    return (
-                      <div
-                        key={index}
-                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-lg shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-[1.01]"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-lg font-bold text-blue-600">
-                            {routeInfo.from} → {destination}
-                          </span>
-                          <span>
-                            {flight.stops === 0 ? '🟢 Direct' : '🛑 Layover'}
-                          </span>
-                        </div>
-
-                        <p className="text-sm mb-1">
-                          <strong>Price:</strong> {flight.price}{' '}
-                          {isRecommended && (
-                            <span className="bg-purple-200 text-purple-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                              ⭐ Recommended
-                            </span>
-                          )}
-                          {!isRecommended && isBestValue && (
-                            <span className="bg-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                              💰 Best Value
-                            </span>
-                          )}
-                        </p>
-
-                        <p className="text-sm mb-1">
-                          <strong>Airline:</strong> {flight.airline}
-                        </p>
-
-                        {flight.duration && (
-                          <p className="text-sm mb-1">
-                            <strong>Duration:</strong> {flight.duration}{' '}
-                            {!isRecommended && isFastest && (
-                              <span className="bg-yellow-200 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded ml-2">
-                                ⚡ Fastest
-                              </span>
-                            )}
-                          </p>
-                        )}
-
-                        {flight.link && (
-                          <a
-                            href={flight.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-block mt-3 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 transition"
-                          >
-                            {t.bookNow || 'Book Now'}
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            {flight && (
+              <div className="mt-3">
+                <p className="text-sm">
+                  <strong>Flight:</strong> {flight.airline} · {flight.duration}{' '}
+                  · {flight.stops === 0 ? 'Direct' : 'Layover'} ·{' '}
+                  <span className="font-semibold">{flight.price}</span> × {travelers} travelers
+                </p>
+                <a
+                  href={flight.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  Book Flight
+                </a>
               </div>
-            );
-          })}
-        </div>
-      ))}
+            )}
 
-      {/* Regenerate Button */}
-      <div className="mt-10 flex justify-center">
-        <button
-          onClick={handleRegenerate}
-          disabled={regenerating}
-          className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-sm font-medium text-slate-900 dark:text-white px-5 py-2 rounded transition disabled:opacity-50"
-        >
-          {regenerating ? t.regenerating || 'Regenerating...' : t.tryAgain || 'Try again'}
-        </button>
-      </div>
+            {hotel && (
+              <div className="mt-3">
+                <p className="text-sm">
+                  <strong>Hotel:</strong> {hotel.name} · {hotel.price}/night ·{' '}
+                  {Math.ceil(travelers / 2)} room(s)
+                </p>
+                <a
+                  href={hotel.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  Book Hotel
+                </a>
+              </div>
+            )}
 
-      {/* Start Over */}
-      <div className="flex flex-wrap gap-4 justify-center mt-8">
-        <button
-          onClick={() => {
-            sessionStorage.clear();
-            router.push(`/${lang}`);
-          }}
-          className="inline-block px-5 py-2 bg-[#007BFF] hover:bg-[#005fcc] text-white rounded transition text-sm"
-        >
-          🔁 {t.searchAgain || 'Search Again'}
-        </button>
-      </div>
+            {car && (
+              <div className="mt-3">
+                <p className="text-sm">
+                  <strong>Car:</strong> {car.company} · {car.price} total
+                </p>
+                <a
+                  href={car.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  Book Car
+                </a>
+              </div>
+            )}
 
-      {/* Google Ads */}
-      <div className="mt-10">
+            <div className="mt-4 text-sm text-slate-700 dark:text-slate-300">
+              <strong>Total cost:</strong> {formatMoney(totalCost)} ·{' '}
+              <strong>Per person:</strong> {formatMoney(perPersonCost)}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="mt-12">
         <GoogleAds />
       </div>
     </div>
