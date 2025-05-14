@@ -18,7 +18,7 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
   }
 
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-dev-shm-usage',
