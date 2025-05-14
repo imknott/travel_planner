@@ -10,12 +10,7 @@ import { chromium } from 'playwright';
  */
 export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate = null) {
   const url = `https://www.kiwi.com/en/search/results/${fromCity}/${toCity}/${departDate}/${returnDate}`;
-  url.searchParams.set('origin', fromCity);
-  url.searchParams.set('destination', toCity);
-  url.searchParams.set('outboundDate', departDate);
-  if (returnDate) {
-    url.searchParams.set('inboundDate', returnDate);
-  }
+  console.log('🔗 Scraping URL:', url);
 
   const browser = await chromium.launch({
     headless: true,
@@ -28,10 +23,10 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
     ]
   });
 
-  const page = await browser.newPage(); // ✅ this was missing
+  const page = await browser.newPage();
 
   try {
-    await page.goto(url.toString(), { waitUntil: 'networkidle' });
+    await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForTimeout(4000);
     await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
 
