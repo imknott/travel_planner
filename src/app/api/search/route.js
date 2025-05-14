@@ -13,11 +13,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
-    const prompt = `
-You are a travel planner. Extract the following fields from the user's message. If anything is missing, return "null".
+const prompt = `
+You are a travel planner. Extract the following fields from the user's message. Format origin and destination(s) as lowercase slugs with hyphens and regions (e.g., "raleigh-north-carolina-united-states", "tokyo-japan").
 
-From: <departure city>
-Destinations: <comma-separated destination cities>
+From: <departure slug>
+Destinations: <comma-separated destination slugs>
 Months: <comma-separated YYYY-MM>
 Duration (days): <integer>
 Include Flight: <true|false>
@@ -26,10 +26,12 @@ Include Car: <true|false>
 Budget: <integer or null>
 Travelers: <integer or null>
 Checked Bags: <true|false>
+
 \`\`\`
 ${userQuery}
 \`\`\`
 `;
+
 
     const parseResult = await ai.models.generateContent({
       model: 'gemini-2.0-flash',

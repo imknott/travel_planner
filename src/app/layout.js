@@ -9,6 +9,20 @@ export default function LocaleLayout({ children, params }) {
 
   return (
     <html lang={locale} className="dark">
+      <head>
+        <script
+          data-noptimize="1"
+          data-cfasync="false"
+          data-wpfc-render="false"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // whatever their script gives you
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-white">
         <LanguageProvider lang={locale}>
           <Navbar />

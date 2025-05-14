@@ -9,14 +9,12 @@ import { chromium } from 'playwright';
  * @returns {Promise<Array<{ price, airline, duration, stops, link }>>}
  */
 export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate = null) {
-  const url = new URL('https://www.kiwi.com/en/search/results');
-  url.searchParams.set('from', fromCity);
-  url.searchParams.set('to', toCity);
-  url.searchParams.set('dateFrom', departDate);
-  url.searchParams.set('dateTo', departDate);
+  const url = new URL('https://www.kiwi.com/en/');
+  url.searchParams.set('origin', parsed.origin);
+  url.searchParams.set('destination', parsed.destination);
+  url.searchParams.set('outboundDate', parsed.departDate);
   if (returnDate) {
-    url.searchParams.set('returnFrom', returnDate);
-    url.searchParams.set('returnTo', returnDate);
+     url.searchParams.set('inboundDate', returnDate)
   }
 
    const browser = await chromium.launch({
