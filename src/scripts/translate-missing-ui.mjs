@@ -25,7 +25,8 @@ const REQUIRED_KEYS = [
   'searchAgain',
   'bookFlights',
   'features',
-  'popular'
+  'popular',
+  'about'
 ];
 
 const baseLang = translations.en;

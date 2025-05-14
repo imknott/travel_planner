@@ -23,7 +23,8 @@ const requiredKeys = [
   "generateResults",
   "restart",
   "yourPreferences",
-  "next"
+  "next",
+  "about"
 ];
 const langs = Object.keys(translations);
 

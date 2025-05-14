@@ -28,32 +28,37 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
     ]
   });
 
-  await page.goto(url.toString(), { waitUntil: 'networkidle' });
-  await page.waitForTimeout(4000); // wait for JS animations
+  const page = await browser.newPage(); // ✅ this was missing
 
-  await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
+  try {
+    await page.goto(url.toString(), { waitUntil: 'networkidle' });
+    await page.waitForTimeout(4000);
+    await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
 
-
-  const results = await page.evaluate(() => {
-  return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
-    .slice(0, 3)
-    .map(card => {
-      const price = card.querySelector('[data-test="ResultCardPrice"]')?.innerText.trim() || 'N/A';
-      const airline = card.querySelector('[data-test="ResultCardCarrierLogo"] img')?.alt || 'Unknown';
-      const duration = card.querySelector('[data-test="TripTimestamp"]')?.textContent?.trim() || '';
-      const stopsText = card.querySelector('[data-test^="StopCountBadge"]')?.textContent || '';
-      const stops = stopsText.toLowerCase().includes('direct') ? 0 : 1;
-      return {
-        price,
-        airline,
-        duration,
-        stops,
-        link: window.location.href
-      };
+    const results = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
+        .slice(0, 3)
+        .map(card => {
+          const price = card.querySelector('[data-test="ResultCardPrice"]')?.innerText.trim() || 'N/A';
+          const airline = card.querySelector('[data-test="ResultCardCarrierLogo"] img')?.alt || 'Unknown';
+          const duration = card.querySelector('[data-test="TripTimestamp"]')?.textContent?.trim() || '';
+          const stopsText = card.querySelector('[data-test^="StopCountBadge"]')?.textContent || '';
+          const stops = stopsText.toLowerCase().includes('direct') ? 0 : 1;
+          return {
+            price,
+            airline,
+            duration,
+            stops,
+            link: window.location.href
+          };
+        });
     });
-});
 
-
-  await browser.close();
-  return results;
+    return results;
+  } catch (err) {
+    console.error(`❌ Scraping failed for ${toCity} on ${departDate}:`, err);
+    return [];
+  } finally {
+    await browser.close();
+  }
 }

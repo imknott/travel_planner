@@ -7,10 +7,11 @@ export const translations = {
     "quiz": "🎯 Not sure where to go? Take our trip quiz!",
     "login": "Login",
     "signup": "Sign Up",
+    "about":"Build a full travel itinerary with the power of AI and the most up to date travel information! ",
     "features": [
-      "✔️ No subscription",
+      "✔️ Effectively find the perfect deal for you",
       "✔️ Free to use",
-      "✔️ Open source"
+      "✔️ Use ai to find fun activities on your trip."
     ],
     "popular": "🔥 Popular Searches: Tokyo, Paris, Bali, Cape Town",
     "tripSummary": "Your flight suggestions",
