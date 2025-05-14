@@ -86,7 +86,7 @@ export default function Home() {
             <div className="mt-6 flex flex-col items-center">
               <div className="w-24 h-24 relative">
                 <img src="https://media.giphy.com/media/DuJmk1yRUd1Di/giphy.gif" alt="Spinning Earth" className="w-full h-full rounded-full border-4 border-white shadow-lg" />
-                <img src="/plane.svg" alt="Plane" className="absolute top-1 left-1 w-6 h-6 animate-fly" />
+                <img src="/images/airliner-8886817.svg" alt="Plane" className="absolute top-1 left-1 w-6 h-6 animate-fly" />
               </div>
               <p className="mt-4 text-sm text-white animate-pulse">Loading travel magic…</p>
               <p className="mt-2 text-xs text-gray-300">✈ {funFacts[factIndex]}</p>
