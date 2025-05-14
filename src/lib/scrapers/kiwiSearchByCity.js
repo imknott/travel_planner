@@ -9,7 +9,7 @@ import { chromium } from 'playwright';
  * @returns {Promise<Array<{ price, airline, duration, stops, link }>>}
  */
 export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate = null) {
-  const url = new URL('https://www.kiwi.com/en/');
+  const url = `https://www.kiwi.com/en/search/results/${fromCity}/${toCity}/${departDate}/${returnDate}`;
   url.searchParams.set('origin', fromCity);
   url.searchParams.set('destination', toCity);
   url.searchParams.set('outboundDate', departDate);
@@ -28,42 +28,31 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
     ]
   });
 
-  const page = await browser.newPage();
+  const page = await browser.newPage(); // ✅ this was missing
 
   try {
     await page.goto(url.toString(), { waitUntil: 'networkidle' });
-    await page.waitForTimeout(4000); // Let animations settle
+    await page.waitForTimeout(4000);
+    await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
 
-    let attempt = 0;
-    const maxAttempts = 6;
-    let results = [];
-
-    while (attempt < maxAttempts && results.length === 0) {
-      try {
-        await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 10000 });
-        results = await page.evaluate(() => {
-          return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
-            .slice(0, 3)
-            .map(card => {
-              const price = card.querySelector('[data-test="ResultCardPrice"]')?.innerText.trim() || 'N/A';
-              const airline = card.querySelector('[data-test="ResultCardCarrierLogo"] img')?.alt || 'Unknown';
-              const duration = card.querySelector('[data-test="TripTimestamp"]')?.textContent?.trim() || '';
-              const stopsText = card.querySelector('[data-test^="StopCountBadge"]')?.textContent || '';
-              const stops = stopsText.toLowerCase().includes('direct') ? 0 : 1;
-              return {
-                price,
-                airline,
-                duration,
-                stops,
-                link: window.location.href
-              };
-            });
+    const results = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
+        .slice(0, 3)
+        .map(card => {
+          const price = card.querySelector('[data-test="ResultCardPrice"]')?.innerText.trim() || 'N/A';
+          const airline = card.querySelector('[data-test="ResultCardCarrierLogo"] img')?.alt || 'Unknown';
+          const duration = card.querySelector('[data-test="TripTimestamp"]')?.textContent?.trim() || '';
+          const stopsText = card.querySelector('[data-test^="StopCountBadge"]')?.textContent || '';
+          const stops = stopsText.toLowerCase().includes('direct') ? 0 : 1;
+          return {
+            price,
+            airline,
+            duration,
+            stops,
+            link: window.location.href
+          };
         });
-      } catch (err) {
-        console.warn(`⏳ Attempt ${attempt + 1} failed, retrying...`);
-      }
-      attempt++;
-    }
+    });
 
     return results;
   } catch (err) {
