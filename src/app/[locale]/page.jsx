@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/context/LanguageContext';
+import TravelInsuranceAd from '@/components/TravelInsuranceAd';
 
 export default function Home() {
   const [input, setInput] = useState('');
@@ -83,6 +84,7 @@ export default function Home() {
         </div>
       </section>
 
+      <TravelInsuranceAd />
       {/* About Section */}
       <section className="bg-slate-100 dark:bg-slate-800 py-12 px-4 text-center">
         <div className="max-w-4xl mx-auto">

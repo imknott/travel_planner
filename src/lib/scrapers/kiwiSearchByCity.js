@@ -18,7 +18,7 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
   }
 
   const browser = await chromium.launch({
-    headless: true,
+    headless: false,
     args: [
       '--no-sandbox',
       '--disable-dev-shm-usage',
@@ -28,22 +28,31 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
     ]
   });
 
-  const page = await browser.newPage();
   await page.goto(url.toString(), { waitUntil: 'networkidle' });
-  await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 15000 });
+  await page.waitForTimeout(4000); // wait for JS animations
+
+  await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
+
 
   const results = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
-      .slice(0, 3)
-      .map((card) => {
-        const price = card.querySelector('[data-test="Price"]')?.textContent?.trim() || 'N/A';
-        const airline = card.querySelector('[data-test="Airline"]')?.textContent?.trim() || 'Unknown';
-        const duration = card.querySelector('[data-test="Duration"]')?.textContent?.trim() || null;
-        const stops = card.querySelector('[data-test="StopInfo"]')?.textContent?.includes('direct') ? 0 : 1;
-        const link = window.location.href;
-        return { price, airline, duration, stops, link };
-      });
-  });
+  return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))
+    .slice(0, 3)
+    .map(card => {
+      const price = card.querySelector('[data-test="ResultCardPrice"]')?.innerText.trim() || 'N/A';
+      const airline = card.querySelector('[data-test="ResultCardCarrierLogo"] img')?.alt || 'Unknown';
+      const duration = card.querySelector('[data-test="TripTimestamp"]')?.textContent?.trim() || '';
+      const stopsText = card.querySelector('[data-test^="StopCountBadge"]')?.textContent || '';
+      const stops = stopsText.toLowerCase().includes('direct') ? 0 : 1;
+      return {
+        price,
+        airline,
+        duration,
+        stops,
+        link: window.location.href
+      };
+    });
+});
+
 
   await browser.close();
   return results;
