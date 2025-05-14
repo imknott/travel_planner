@@ -38,8 +38,7 @@ export default function Navbar() {
       ? '/' + (isValid ? segments.slice(2).join('/') : segments.slice(1).join('/'))
       : '/' + [newLang, ...segments.slice(isValid ? 2 : 1)].join('/');
 
-    localStorage.setItem('flighthacked_lang', newLang);
-    setLang(newLang);
+    
     router.push(newPath);
   };
 

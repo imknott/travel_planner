@@ -20,12 +20,17 @@ export function LanguageProvider({ children, lang }) {
    * On mount, check if a saved language preference exists in localStorage.
    * If not, fall back to browser language or default to 'en'.
    */
-  useEffect(() => {
+useEffect(() => {
+  if (lang) {
+    setLanguage(lang);
+    localStorage.setItem('flighthacked_lang', lang);
+  } else {
     const saved = localStorage.getItem('flighthacked_lang');
     const browser = navigator.language.slice(0, 2);
     const fallback = translations[browser] ? browser : 'en';
     setLanguage(saved || fallback);
-  }, []);
+  }
+}, [lang]);
 
   /**
    * Change the current language and persist it to localStorage.
