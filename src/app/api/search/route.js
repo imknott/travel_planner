@@ -38,15 +38,15 @@ async function getAttractions(destination) {
     contents: prompt,
   });
 
-  const text = await response.text();
-  const items = text
+  const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  return text
     .split('\n')
     .map(line => line.replace(/^[-•\d\.\s]+/, '').trim())
     .filter(Boolean)
     .slice(0, 3);
-
-  return items;
 }
+
 
 import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
 

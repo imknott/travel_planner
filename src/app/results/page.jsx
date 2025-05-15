@@ -65,14 +65,13 @@ export default function ResultsPage() {
           checkedBags,
           flights,
           hotels,
-          cars,
+          attractions,
           totalCost,
           perPersonCost,
         } = pkg;
 
         const flight = flights?.[0];
         const hotel = hotels?.[0];
-        const car = cars?.[0];
 
         const budgetNote = budget
           ? totalCost > budget
@@ -105,51 +104,28 @@ export default function ResultsPage() {
             {flight && (
               <div className="mt-3">
                 <p className="text-sm">
-                  <strong>Flight:</strong> {flight.airline} · {flight.duration}{' '}
-                  · {flight.stops === 0 ? 'Direct' : 'Layover'} ·{' '}
+                  <strong>Flight:</strong> {flight.airline || 'N/A'} · {flight.duration || 'N/A'} · {flight.stops === 0 ? 'Direct' : 'Layover'} ·{' '}
                   <span className="font-semibold">{flight.price}</span> × {travelers} travelers
                 </p>
-                <a
-                  href={flight.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline text-sm"
-                >
-                  Book Flight
-                </a>
               </div>
             )}
 
             {hotel && (
               <div className="mt-3">
                 <p className="text-sm">
-                  <strong>Hotel:</strong> {hotel.name} · {hotel.price}/night ·{' '}
-                  {Math.ceil(travelers / 2)} room(s)
+                  <strong>Hotel:</strong> {hotel.name} · {hotel.price} {hotel.currency} · {Math.ceil(travelers / 2)} room(s)
                 </p>
-                <a
-                  href={hotel.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline text-sm"
-                >
-                  Book Hotel
-                </a>
               </div>
             )}
 
-            {car && (
+            {attractions?.length > 0 && (
               <div className="mt-3">
-                <p className="text-sm">
-                  <strong>Car:</strong> {car.company} · {car.price} total
-                </p>
-                <a
-                  href={car.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline text-sm"
-                >
-                  Book Car
-                </a>
+                <p className="text-sm font-semibold mb-1">Top attractions:</p>
+                <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300">
+                  {attractions.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
               </div>
             )}
 
@@ -162,7 +138,7 @@ export default function ResultsPage() {
       })}
 
       <div className="mt-12">
-         <TravelInsuranceAd />
+        <TravelInsuranceAd />
       </div>
     </div>
   );
