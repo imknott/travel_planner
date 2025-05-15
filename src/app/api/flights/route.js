@@ -13,20 +13,20 @@ async function getAccessToken() {
     return tokenCache.token;
   }
 
-  const res = await fetch(`${AMADEUS_API_BASE}/v1/security/oauth2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: process.env.AMADEUS_CLIENT_ID,
-      client_secret: process.env.AMADEUS_CLIENT_SECRET,
-    }),
-  });
+const res = await fetch(`${AMADEUS_API_BASE}/v2/shopping/flight-offers?${params.toString()}`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
-  const data = await res.json();
-  tokenCache.token = data.access_token;
-  tokenCache.expiresAt = now + data.expires_in * 1000;
-  return data.access_token;
+if (!res.ok) {
+  const error = await res.text();
+  console.error(`❌ Amadeus API error: ${res.status} — ${error}`);
+  return NextResponse.json({ error: 'Amadeus API error' }, { status: res.status });
+}
+
+const data = await res.json();
+return NextResponse.json(data.data); // return only offers
 }
 
 export async function POST(req) {

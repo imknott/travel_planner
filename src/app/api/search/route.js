@@ -28,7 +28,7 @@ async function getAmadeusAccessToken() {
 
   const data = await res.json();
   accessTokenCache.token = data.access_token;
-  accessTokenCache.expiresAt = now + data.expires_in * 1000;
+  accessTokenCache.expiresAt = Date.now() + data.expires_in * 1000;
   return data.access_token;
 }
 
@@ -234,11 +234,38 @@ Checked Bags: <true|false>
             let flightCost = 0;
             let hotelCost = 0;
 
-            if (includeFlight) {
+            // ✅ resolve city codes
+            let fromCode = await getCachedCityCode(from);
+            let destinationCode = await getCachedCityCode(destination);
+
+            if (!fromCode || !destinationCode) {
+              const token = await getAmadeusAccessToken();
+
+              if (!fromCode) {
+                const res = await fetch(`${AMADEUS_API_BASE}/v1/reference-data/locations?keyword=${from}&subType=CITY`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                fromCode = data.data?.[0]?.iataCode;
+                if (fromCode) await saveCityCode(from, fromCode);
+              }
+
+              if (!destinationCode) {
+                const res = await fetch(`${AMADEUS_API_BASE}/v1/reference-data/locations?keyword=${destination}&subType=CITY`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                destinationCode = data.data?.[0]?.iataCode;
+                if (destinationCode) await saveCityCode(destination, destinationCode);
+              }
+            }
+
+            // ✈️ Flights
+            if (includeFlight && fromCode && destinationCode) {
               const token = await getAmadeusAccessToken();
               const params = new URLSearchParams({
-                originLocationCode: from,
-                destinationLocationCode: destination,
+                originLocationCode: fromCode,
+                destinationLocationCode: destinationCode,
                 departureDate: departDate,
                 adults: travelers.toString(),
                 currencyCode: 'USD',
@@ -270,6 +297,7 @@ Checked Bags: <true|false>
               console.log('🛫 Flights:', entry.flights);
             }
 
+            // 🏨 Hotels
             if (includeHotel) {
               entry.hotels = await getHotelOffers(destination, departDate, returnDateStr, travelers);
               hotelCost = entry.hotels[0]
@@ -278,6 +306,7 @@ Checked Bags: <true|false>
               console.log('🏨 Hotels:', entry.hotels);
             }
 
+            // 📍 Attractions
             entry.attractions = await getAttractions(destination);
             console.log('📍 Attractions:', entry.attractions);
 
