@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -47,9 +48,6 @@ async function getAttractions(destination) {
     .slice(0, 3);
 }
 
-
-import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
-
 async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
   const token = await getAmadeusAccessToken();
 
@@ -92,7 +90,6 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     };
   });
 }
-
 
 export async function POST(req) {
   try {
@@ -254,19 +251,35 @@ Checked Bags: <true|false>
               });
 
               const flightData = await res.json();
-              entry.flights = flightData.data || [];
+              const rawFlights = flightData.data || [];
+              entry.flights = rawFlights.slice(0, 3).map(flight => {
+                const itinerary = flight.itineraries?.[0];
+                const segments = itinerary?.segments || [];
+                return {
+                  airline: flight.validatingAirlineCodes?.[0] || 'Unknown',
+                  duration: itinerary?.duration || 'N/A',
+                  price: flight.price?.total || '0',
+                  stops: segments.length > 1 ? segments.length - 1 : 0,
+                };
+              });
+
               flightCost = entry.flights[0]
-                ? parseFloat(entry.flights[0].price?.total || '0') * travelers
+                ? parseFloat(entry.flights[0].price || '0') * travelers
                 : 0;
+
+              console.log('🛫 Flights:', entry.flights);
             }
 
             if (includeHotel) {
               entry.hotels = await getHotelOffers(destination, departDate, returnDateStr, travelers);
-              const nightlyRate = entry.hotels[0] ? parseFloat(entry.hotels[0].price || '0') : 0;
-              hotelCost = nightlyRate * durationDays * Math.ceil(travelers / 2);
+              hotelCost = entry.hotels[0]
+                ? parseFloat(entry.hotels[0].price || '0') * durationDays * Math.ceil(travelers / 2)
+                : 0;
+              console.log('🏨 Hotels:', entry.hotels);
             }
 
             entry.attractions = await getAttractions(destination);
+            console.log('📍 Attractions:', entry.attractions);
 
             const total = flightCost + hotelCost;
             entry.totalCost = Math.round(total);
