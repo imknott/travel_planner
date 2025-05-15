@@ -28,7 +28,7 @@ export async function scrapeKiwiFlights(fromCity, toCity, departDate, returnDate
   try {
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForTimeout(4000);
-    await page.waitForSelector('[data-test="ResultCardWrapper"]', { timeout: 30000 });
+    await page.waitForSelector('[data-test^="ResultCard"]', { timeout: 30000 });
 
     const results = await page.evaluate(() => {
       return Array.from(document.querySelectorAll('[data-test="ResultCardWrapper"]'))

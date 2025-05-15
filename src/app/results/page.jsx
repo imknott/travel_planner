@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useLanguage } from '@/context/LanguageContext';
-import GoogleAds from '@/components/googleAds';
+import TravelInsuranceAd from '@/components/TravelInsuranceAd';
 
 export default function ResultsPage() {
   const router = useRouter();
-  const { lang, t } = useLanguage();
   const [results, setResults] = useState([]);
   const [routeInfo, setRouteInfo] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,7 +16,7 @@ export default function ResultsPage() {
     const stored = sessionStorage.getItem('flighthacked_result');
     if (!stored) {
       toast.error('No results found. Please start a new search.');
-      router.push(`/${lang}`);
+      router.push(`/`);
       return;
     }
 
@@ -34,11 +32,11 @@ export default function ResultsPage() {
       if (parsed.budget) setBudget(Number(parsed.budget));
     } catch {
       toast.error('Error parsing results.');
-      router.push(`/${lang}`);
+      router.push(`/`);
     } finally {
       setLoading(false);
     }
-  }, [router, lang]);
+  }, [router]);
 
   const formatMoney = (amount) =>
     `$${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
@@ -46,7 +44,7 @@ export default function ResultsPage() {
   if (loading) {
     return (
       <div className="min-h-screen pt-24 px-4 text-center text-lg">
-        {t.loading || 'Fetching travel packages...'}
+        Fetching travel packages…
       </div>
     );
   }
@@ -54,7 +52,7 @@ export default function ResultsPage() {
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-4xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
       <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
-        {t.tripSummary || 'Your travel packages'}
+        Your travel packages
       </h1>
 
       {results.map((pkg, idx) => {
@@ -164,7 +162,7 @@ export default function ResultsPage() {
       })}
 
       <div className="mt-12">
-        <GoogleAds />
+         <TravelInsuranceAd />
       </div>
     </div>
   );

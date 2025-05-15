@@ -1,10 +1,98 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { scrapeKiwiFlights } from '@/lib/scrapers/kiwiSearchByCity';
-import { scrapeKiwiHotels } from '@/lib/scrapers/kiwiHotelScraper';
-import { scrapeKiwiCars } from '@/lib/scrapers/kiwiCarScraper';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const AMADEUS_API_BASE = 'https://test.api.amadeus.com';
+let accessTokenCache = {
+  token: null,
+  expiresAt: 0,
+};
+
+async function getAmadeusAccessToken() {
+  const now = Date.now();
+  if (accessTokenCache.token && now < accessTokenCache.expiresAt) {
+    return accessTokenCache.token;
+  }
+
+  const res = await fetch(`${AMADEUS_API_BASE}/v1/security/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: process.env.AMADEUS_CLIENT_ID,
+      client_secret: process.env.AMADEUS_CLIENT_SECRET,
+    }),
+  });
+
+  const data = await res.json();
+  accessTokenCache.token = data.access_token;
+  accessTokenCache.expiresAt = now + data.expires_in * 1000;
+  return data.access_token;
+}
+
+async function getAttractions(destination) {
+  const prompt = `List the top 3 popular tourist attractions in ${destination}, in short bullet form.`;
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: prompt,
+  });
+
+  const text = await response.text();
+  const items = text
+    .split('\n')
+    .map(line => line.replace(/^[-•\d\.\s]+/, '').trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return items;
+}
+
+import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
+
+async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
+  const token = await getAmadeusAccessToken();
+
+  let cityCode = await getCachedCityCode(city);
+  if (!cityCode) {
+    const locationRes = await fetch(`${AMADEUS_API_BASE}/v1/reference-data/locations?keyword=${city}&subType=CITY`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const locationData = await locationRes.json();
+    cityCode = locationData.data?.[0]?.iataCode;
+    if (cityCode) await saveCityCode(city, cityCode);
+  }
+
+  if (!cityCode) return [];
+
+  const params = new URLSearchParams({
+    cityCode,
+    checkInDate,
+    checkOutDate,
+    adults: adults.toString(),
+    currency: 'USD',
+    sort: 'PRICE',
+  });
+
+  const res = await fetch(`${AMADEUS_API_BASE}/v3/shopping/hotel-offers?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+
+  return (data.data || []).slice(0, 3).map(hotel => {
+    const offer = hotel.offers?.[0];
+    return {
+      name: hotel.hotel.name,
+      address: hotel.hotel.address.lines?.[0],
+      price: offer?.price?.total,
+      currency: offer?.price?.currency,
+      checkInDate,
+      checkOutDate,
+    };
+  });
+}
+
 
 export async function POST(req) {
   try {
@@ -13,8 +101,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing or invalid user query' }, { status: 400 });
     }
 
-const prompt = `
-You are a travel planner. Extract the following fields from the user's message. Format origin and destination(s) as lowercase slugs with hyphens and regions (e.g., "raleigh-north-carolina-united-states", "tokyo-japan").
+    const prompt = `
+You are a travel planner. Extract the following fields from the user's message. Format origin and destination(s) as lowercase slugs with hyphens and regions (e.g., "raleigh", "tokyo").
 
 From: <departure slug>
 Destinations: <comma-separated destination slugs>
@@ -22,16 +110,11 @@ Months: <comma-separated YYYY-MM>
 Duration (days): <integer>
 Include Flight: <true|false>
 Include Hotel: <true|false>
-Include Car: <true|false>
 Budget: <integer or null>
 Travelers: <integer or null>
 Checked Bags: <true|false>
 
-\`\`\`
-${userQuery}
-\`\`\`
-`;
-
+\n\n\n${userQuery}\n\n\n`;
 
     const parseResult = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
@@ -52,7 +135,6 @@ ${userQuery}
       durationDays: 7,
       includeFlight: true,
       includeHotel: false,
-      includeCar: false,
       budget: null,
       travelers: 1,
       checkedBags: false,
@@ -80,9 +162,6 @@ ${userQuery}
         case 'include hotel':
           fields.includeHotel = value === 'true';
           break;
-        case 'include car':
-          fields.includeCar = value === 'true';
-          break;
         case 'budget':
           fields.budget = value !== 'null' ? parseInt(value) : null;
           break;
@@ -95,7 +174,6 @@ ${userQuery}
       }
     }
 
-    // Fallback for months
     if (!fields.months.length) {
       const now = new Date();
       const y = now.getFullYear();
@@ -113,7 +191,6 @@ ${userQuery}
       durationDays,
       includeFlight,
       includeHotel,
-      includeCar,
       travelers,
       checkedBags,
       budget,
@@ -124,11 +201,17 @@ ${userQuery}
     }
 
     const results = [];
+    const now = new Date();
 
     for (const destination of destinations) {
       for (const month of months) {
-        const [year, monthNum] = month.split('-').map(Number);
-        const sampleDates = [3, 12, 21].map(day => new Date(year, monthNum - 1, day));
+        let [year, monthNum] = month.split('-').map(Number);
+        const testDate = new Date(year, monthNum - 1, 1);
+        if (testDate < now) year += 1;
+
+        const sampleDates = [3, 12, 21]
+          .map(day => new Date(year, monthNum - 1, day))
+          .filter(date => date >= now);
 
         for (const depart of sampleDates) {
           const departDate = depart.toISOString().split('T')[0];
@@ -145,7 +228,7 @@ ${userQuery}
             checkedBags,
             flights: [],
             hotels: [],
-            cars: [],
+            attractions: [],
             totalCost: 0,
             perPersonCost: 0,
           };
@@ -153,32 +236,44 @@ ${userQuery}
           try {
             let flightCost = 0;
             let hotelCost = 0;
-            let carCost = 0;
 
             if (includeFlight) {
-              entry.flights = await scrapeKiwiFlights(from, destination, departDate, returnDateStr);
-              flightCost = entry.flights[0] ? parseFloat(entry.flights[0].price?.replace(/[^\d.]/g, '')) * travelers : 0;
+              const token = await getAmadeusAccessToken();
+              const params = new URLSearchParams({
+                originLocationCode: from,
+                destinationLocationCode: destination,
+                departureDate: departDate,
+                adults: travelers.toString(),
+                currencyCode: 'USD',
+                max: '3',
+              });
+              params.set('returnDate', returnDateStr);
+
+              const res = await fetch(`${AMADEUS_API_BASE}/v2/shopping/flight-offers?${params}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              const flightData = await res.json();
+              entry.flights = flightData.data || [];
+              flightCost = entry.flights[0]
+                ? parseFloat(entry.flights[0].price?.total || '0') * travelers
+                : 0;
             }
 
             if (includeHotel) {
-              entry.hotels = await scrapeKiwiHotels(destination, departDate, returnDateStr);
-              const nights = durationDays;
-              const roomsNeeded = Math.ceil(travelers / 2);
-              const nightlyRate = entry.hotels[0] ? parseFloat(entry.hotels[0].price?.replace(/[^\d.]/g, '')) : 0;
-              hotelCost = nightlyRate * nights * roomsNeeded;
+              entry.hotels = await getHotelOffers(destination, departDate, returnDateStr, travelers);
+              const nightlyRate = entry.hotels[0] ? parseFloat(entry.hotels[0].price || '0') : 0;
+              hotelCost = nightlyRate * durationDays * Math.ceil(travelers / 2);
             }
 
-            if (includeCar) {
-              entry.cars = await scrapeKiwiCars(destination, departDate, returnDateStr);
-              carCost = entry.cars[0] ? parseFloat(entry.cars[0].price?.replace(/[^\d.]/g, '')) : 0;
-            }
+            entry.attractions = await getAttractions(destination);
 
-            const total = flightCost + hotelCost + carCost;
+            const total = flightCost + hotelCost;
             entry.totalCost = Math.round(total);
             entry.perPersonCost = Math.round(total / travelers);
 
           } catch (err) {
-            console.warn(`❌ Scraping failed for ${destination} on ${departDate}:`, err);
+            console.warn(`❌ Failed for ${destination} on ${departDate}:`, err);
           }
 
           results.push(entry);
