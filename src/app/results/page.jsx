@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import FlightCard from '@/components/FlightCard';
+import AttractionCard from '@/components/AttractionCard';
 import TravelInsuranceAd from '@/components/TravelInsuranceAd';
 
 export default function ResultsPage() {
@@ -51,9 +53,7 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen pt-24 px-4 pb-16 max-w-4xl mx-auto text-slate-900 dark:text-white transition-colors duration-200">
-      <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">
-        Your travel packages
-      </h1>
+      <h1 className="text-2xl font-bold mb-6 text-[#007BFF]">Your travel packages</h1>
 
       {results.map((pkg, idx) => {
         const {
@@ -80,17 +80,12 @@ export default function ResultsPage() {
           : `Total cost: ${formatMoney(totalCost)}`;
 
         return (
-          <div
-            key={idx}
-            className="mb-10 border rounded-lg p-5 bg-white dark:bg-slate-800 shadow"
-          >
+          <div key={idx} className="mb-10 border rounded-lg p-5 bg-white dark:bg-slate-800 shadow">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-semibold text-blue-600">
                 ✈ {from} → {destination}
               </h2>
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {budgetNote}
-              </span>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{budgetNote}</span>
             </div>
 
             <p className="text-sm mb-1">
@@ -101,31 +96,33 @@ export default function ResultsPage() {
               {checkedBags ? ' · Includes checked bags' : ''}
             </p>
 
-            {flight && (
-              <div className="mt-3">
-                <p className="text-sm">
-                  <strong>Flight:</strong> {flight.airline || 'N/A'} · {flight.duration || 'N/A'} · {flight.stops === 0 ? 'Direct' : 'Layover'} ·{' '}
-                  <span className="font-semibold">{flight.price}</span> × {travelers} travelers
-                </p>
-              </div>
-            )}
+            {flight && <FlightCard flight={flight} travelers={travelers} />}
 
             {hotel && (
-              <div className="mt-3">
-                <p className="text-sm">
-                  <strong>Hotel:</strong> {hotel.name} · {hotel.price} {hotel.currency} · {Math.ceil(travelers / 2)} room(s)
+              <div className="mt-3 text-sm bg-slate-100 dark:bg-slate-700 p-4 rounded-md">
+                <p className="font-semibold mb-1">Hotel:</p>
+                <p>
+                  🏨 <strong>{hotel.name}</strong>
+                </p>
+                <p>
+                  💲 {formatMoney(hotel.price)} {hotel.currency} · {Math.ceil(travelers / 2)} room(s)
                 </p>
               </div>
             )}
 
             {attractions?.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm font-semibold mb-1">Top attractions:</p>
-                <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300">
-                  {attractions.map((item, index) => (
-                    <li key={index}>{item}</li>
+              <div className="mt-4">
+                <p className="text-sm font-semibold mb-2">Top attractions:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {attractions.map((item, i) => (
+                    <AttractionCard
+                      key={i}
+                      name={item.name}
+                      image={item.image}
+                      description={item.description}
+                    />
                   ))}
-                </ul>
+                </div>
               </div>
             )}
 
