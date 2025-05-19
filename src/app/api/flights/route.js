@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const AMADEUS_API_BASE = 'https://test.api.amadeus.com'; // use 'https://api.amadeus.com' in production
+const AMADEUS_API_BASE = 'https://api.amadeus.com'; // use 'https://api.amadeus.com' in production
 
 let tokenCache = {
   token: null,
