@@ -92,7 +92,10 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     if (cityCode) await saveCityCode(city, cityCode);
   }
 
-  if (!cityCode) return [];
+  if (!cityCode) {
+    console.warn(`⚠️ No cityCode found for: ${city}`);
+    return [];
+  }
 
   const params = new URLSearchParams({
     cityCode,
@@ -103,11 +106,21 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     sort: 'PRICE',
   });
 
-  const res = await fetch(`${AMADEUS_API_BASE}/v3/shopping/hotel-offers?${params}`, {
+  const url = `${AMADEUS_API_BASE}/v3/shopping/hotel-offers?${params}`;
+  console.log('🏨 Fetching hotels:', url);
+
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`❌ Hotel API error ${res.status}: ${errText}`);
+    return [];
+  }
+
   const data = await res.json();
+  console.log('🏨 Raw hotel data:', JSON.stringify(data?.data?.[0], null, 2));
 
   return (data.data || []).slice(0, 3).map(hotel => {
     const offer = hotel.offers?.[0];
@@ -121,6 +134,7 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     };
   });
 }
+
 
 export async function POST(req) {
   try {
