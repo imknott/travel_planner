@@ -4,7 +4,7 @@ import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const AMADEUS_API_BASE = 'https://test.api.amadeus.com';
+const AMADEUS_API_BASE = 'https://api.amadeus.com';
 let accessTokenCache = {
   token: null,
   expiresAt: 0,
