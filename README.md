@@ -3,199 +3,123 @@
   <img src="https://img.shields.io/badge/Framework-Next.js-000000?logo=next.js&logoColor=white&style=for-the-badge" alt="Next.js Badge">
   <img src="https://img.shields.io/badge/Runtime-Node.js-339933?logo=nodedotjs&logoColor=white&style=for-the-badge" alt="Node.js Badge">
   <img src="https://img.shields.io/badge/Styling-Tailwind%20CSS-38B2AC?logo=tailwindcss&logoColor=white&style=for-the-badge" alt="Tailwind CSS Badge">
-  <img src="https://img.shields.io/badge/Ads-Google%20AdMob-ec0c4d?logo=googleads&logoColor=white&style=for-the-badge" alt="Google AdMob Badge">
+  <img src="https://img.shields.io/badge/Backend-Google%20Cloud%20Run-4285F4?logo=googlecloud&logoColor=white&style=for-the-badge" alt="Google Cloud Badge">
 </p>
 
 ---
 
-#  FlightHacked
+# FlightHacked
 
-FlightHacked is a multilingual travel app that finds the cheapest possible flight combinations using custom layovers, AI-powered search with LLMs, and open-source APIs—all run locally.
-
----
-
-##  Features
-
--  **Multilingual Support** via LibreTranslate
--  **LLM Integration** with Ollama (Mistral, LLaMA3, etc.)
--  **Fast Caching** with Redis
--  **Smart Search Bar** powered by natural language processing
--  **Modern UI** using Tailwind CSS
--  **Ad Integration** with Google AdMob
--  **Hot-reloadable Dev Server** using Next.js
+FlightHacked is a modern AI-powered travel planning platform. It helps users find the most affordable and personalized flights, hotels, and experiences using Google Gemini, Google Cloud Run, and Firestore Authentication.
 
 ---
 
-## 🛠 Installation Guide
+## ✨ Features
 
-### Prerequisites
-
-- Node.js (v18+)
-- npm, yarn, pnpm, or bun
-- Ollama installed locally
-- Redis (optional, for caching)
-- LibreTranslate (or access to [libretranslate.de](https://libretranslate.de))
-
----
-
-###  Ollama Setup
-
-#### Windows
-
-```bash
-# Download from https://ollama.com/download
-ollama --version      # Confirm installation
-ollama run mistral    # Run the Mistral model
-```
-
-#### macOS
-
-```bash
-brew install ollama
-ollama run mistral
-```
-
-#### Ubuntu/Linux
-
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-ollama run mistral
-```
-
-> If needed: `sudo systemctl restart ollama`
+- ✅ Google Sign-In, SMS, and Email Passwordless Auth (via Firebase)
+- ✈️ AI-Powered Flight Search using Amadeus APIs
+- 🏨 Hotel + Attraction Discovery using Google Places + Amadeus
+- 💡 Natural Language Travel Planning (via Gemini)
+- 🌍 Global Airport Auto-Complete
+- 💻 Hosted on Google Cloud Run
+- 🔐 Firestore-protected profiles and multi-factor auth support
+- 🎯 Clean Tailwind UI with profile editor and protected routes
 
 ---
 
-###  Install Dependencies
+## 🚀 Tech Stack
 
-Clone the repo and install dependencies:
+- **Next.js** – React Framework
+- **Tailwind CSS** – Styling
+- **Firebase Auth + Firestore** – Secure user data & login
+- **Google Cloud Run** – Scalable backend hosting
+- **Google Places API** – Live destination + image data
+- **Amadeus APIs** – Flight + Hotel offers
+- **Gemini (Google GenAI)** – Natural language processing and itinerary logic
+
+---
+
+## 🔧 Setup
+
+### 1. Clone and Install
 
 ```bash
 git clone https://github.com/yourusername/flighthacked.git
 cd flighthacked
 npm install
-# or
-yarn install
-# or
-pnpm install
-# or
-bun install
+```
+
+### 2. Environment Variables
+
+Create a `.env` file with:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+GOOGLE_PLACES_KEY=...
+GEMINI_API_KEY=...
+AMADEUS_CLIENT_ID=...
+AMADEUS_CLIENT_SECRET=...
 ```
 
 ---
 
-###  Run the App Locally
+## 🧠 Usage
 
-```bash
-npm run dev
-```
+### Example Queries:
 
-Open your browser to [http://localhost:3000](http://localhost:3000)
+> “Find me a flight from Raleigh to Tokyo in November with a hotel and attractions.”  
+> “Cheapest round trip to Bali for 10 days in July.”
 
----
-
-##  Usage Examples
-
-###  AI-Powered Flight Search
-
-Users can type queries like:
-
-```
-"Find me the cheapest way to get from Paris to Bali in July"
-```
-
-The app uses Ollama to interpret the intent, then finds optimal layovers by scraping flight data via supported airline endpoints.
+Your `/api/search` route uses Gemini to parse the query → resolves cities → fetches flights/hotels/attractions → returns packages.
 
 ---
 
-###  Language Detection & Translation
+## 🛰 Deployment: Google Cloud Run
 
-If a user types in another language, LibreTranslate auto-detects and translates the query before sending it to the LLM.
-
----
-
-##  API Integration
-
-### /api/search
-
-```http
-POST /api/search
-```
-
-**Body:**
-
-```json
-{
-  "origin": "NYC",
-  "destination": "TYO",
-  "date": "2025-06-20",
-  "language": "en"
-}
-```
-
-**Returns:**
-
-```json
-{
-  "routes": [
-    {
-      "segments": [
-        { "from": "NYC", "to": "ICN", "airline": "Korean Air" },
-        { "from": "ICN", "to": "TYO", "airline": "ANA" }
-      ],
-      "price": "$488"
-    }
-  ]
-}
-```
+1. Deploy using `Dockerfile` and Cloud Build
+2. Use Application Default Credentials (no need for Firebase API keys)
+3. Configure Firestore + Auth in Firebase Console
+4. Store user profiles in Firestore on first login
 
 ---
 
-## 🛰 Deployment
+## 🔐 Auth & Profile Management
 
-### Vercel (Recommended)
-
-1. Push your project to GitHub
-2. Go to [https://vercel.com/import](https://vercel.com/import)
-3. Link your repository
-4. Set environment variables:
-   - `OLLAMA_API=http://localhost:11434` *(if self-hosting)*
-   - `TRANSLATE_API=https://libretranslate.de/translate` *(or your own instance)*
-
-### Docker (Self-Hosted Stack)
-
-```bash
-docker-compose up --build
-```
-
-Ensure you have local containers or ports available for:
-- Ollama
-- LibreTranslate
-- Redis (optional)
+- Uses Firebase Auth with support for:
+  - Google sign-in
+  - SMS multi-factor
+  - Email magic link
+- User profile fields:
+  - Name, phone, email, home airport, interests (tags), sex, gender identity, countries traveled, bucket list
 
 ---
 
-## Tech Stack
+## 🧩 API Highlights
 
-- **Next.js** – SSR/ISR React Framework
-- **Tailwind CSS** – Utility-first styling
-- **Ollama** – Local LLMs (LLaMA3, Mistral)
-- **Redis** – Optional fast cache
-- **LibreTranslate** – Language support
-- **Google AdMob** – Revenue via ads
+### `/api/search`
+- AI-powered package builder (flights + hotels + attractions)
+- Uses Google Gemini + Amadeus + Google Places
+
+### `/api/hotels`
+- Returns real hotel offers by city/date
+
+### `/api/flights`
+- Returns real Amadeus flight offers for any route
 
 ---
 
-## Acknowledgments
+## 👥 Community & Acknowledgments
 
-- [Ollama](https://ollama.com)
-- [LibreTranslate](https://libretranslate.com)
-- [Redis](https://redis.io)
-- [Vercel](https://vercel.com)
+- [Gemini](https://deepmind.google/technologies/gemini)
+- [Firebase](https://firebase.google.com)
+- [Amadeus](https://developers.amadeus.com)
+- [Google Places API](https://developers.google.com/maps/documentation/places/web-service)
 - [Shields.io](https://shields.io)
 
 ---
 
-## License
+## 📄 License
 
 MIT © Ian Knott
