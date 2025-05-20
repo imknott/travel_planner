@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { getCachedCityCode, saveCityCode } from '@/lib/iataCache';
+import { getCachedHotelIds, saveHotelIds } from '@/lib/hotelIdCache';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -82,6 +83,7 @@ async function getAttractions(destination) {
 async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
   const token = await getAmadeusAccessToken();
 
+  // 1. Get or resolve cityCode
   let cityCode = await getCachedCityCode(city);
   if (!cityCode) {
     const locationRes = await fetch(`${AMADEUS_API_BASE}/v1/reference-data/locations?keyword=${city}&subType=CITY`, {
@@ -90,15 +92,31 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     const locationData = await locationRes.json();
     cityCode = locationData.data?.[0]?.iataCode;
     if (cityCode) await saveCityCode(city, cityCode);
+    else {
+      console.warn(`⚠️ No cityCode found for city: ${city}`);
+      return [];
+    }
   }
 
-  if (!cityCode) {
-    console.warn(`⚠️ No cityCode found for: ${city}`);
-    return [];
+  // 2. Get or fetch hotelIds for cityCode
+  let hotelIds = await getCachedHotelIds(city);
+  if (!hotelIds) {
+    const hotelIdRes = await fetch(
+      `${AMADEUS_API_BASE}/v1/reference-data/locations/hotels/by-city?cityCode=${cityCode}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const hotelIdData = await hotelIdRes.json();
+    hotelIds = hotelIdData.data?.map(h => h.hotelId).slice(0, 10);
+    if (hotelIds?.length) await saveHotelIds(city, hotelIds);
+    else {
+      console.warn(`⚠️ No hotelIds found for cityCode: ${cityCode}`);
+      return [];
+    }
   }
 
+  // 3. Fetch hotel offers with hotelIds
   const params = new URLSearchParams({
-    cityCode,
+    hotelIds: hotelIds.join(','),
     checkInDate,
     checkOutDate,
     adults: adults.toString(),
@@ -120,13 +138,12 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
   }
 
   const data = await res.json();
-  console.log('🏨 Raw hotel data:', JSON.stringify(data?.data?.[0], null, 2));
 
   return (data.data || []).slice(0, 3).map(hotel => {
     const offer = hotel.offers?.[0];
     return {
       name: hotel.hotel.name,
-      address: hotel.hotel.address.lines?.[0],
+      address: hotel.hotel.address?.lines?.[0],
       price: offer?.price?.total,
       currency: offer?.price?.currency,
       checkInDate,
@@ -134,7 +151,6 @@ async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
     };
   });
 }
-
 
 export async function POST(req) {
   try {

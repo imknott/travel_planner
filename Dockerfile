@@ -1,5 +1,5 @@
 # ====== First stage: Build the app ======
-FROM mcr.microsoft.com/playwright:v1.39.0-jammy AS builder
+FROM node:18 AS builder
 
 WORKDIR /app
 
@@ -7,17 +7,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy all source code
+# Copy source code
 COPY . .
-
-# Install Chromium browser (for scraping)
-RUN npx playwright install chromium
 
 # Build the app
 RUN npm run build
 
 # ====== Second stage: Production image ======
-FROM mcr.microsoft.com/playwright:v1.39.0-jammy
+FROM node:18 AS runner
 
 WORKDIR /app
 
