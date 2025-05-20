@@ -1,28 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
+  getAuth,
   signInWithPopup,
   signInWithPhoneNumber,
+  RecaptchaVerifier,
   signInWithEmailLink,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   GoogleAuthProvider,
-  RecaptchaVerifier,
+  PhoneAuthProvider,
+  signInWithCredential,
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebaseClient';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
-const googleProvider = new GoogleAuthProvider();
+const provider = new GoogleAuthProvider();
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [smsCode, setSmsCode] = useState('');
   const [verificationId, setVerificationId] = useState(null);
-  const [step, setStep] = useState('login'); // login | emailSent | phoneSent | verifyingSMS
+  const [step, setStep] = useState('login');
   const router = useRouter();
+  const auth = getAuth();
+  const db = getFirestore();
 
   const saveUser = async (user) => {
     const ref = doc(db, 'users', user.uid);
@@ -44,7 +53,7 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
-    const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, provider);
     await saveUser(result.user);
     router.push('/profile');
   };
@@ -62,8 +71,8 @@ export default function LoginPage() {
   };
 
   const verifySmsCode = async () => {
-    const cred = auth.PhoneAuthProvider.credential(verificationId, smsCode);
-    const result = await auth.signInWithCredential(cred);
+    const cred = PhoneAuthProvider.credential(verificationId, smsCode);
+    const result = await signInWithCredential(auth, cred);
     await saveUser(result.user);
     router.push('/profile');
   };
@@ -80,8 +89,10 @@ export default function LoginPage() {
   };
 
   const checkEmailSignIn = async () => {
+    const auth = getAuth();
+    if (typeof window === 'undefined') return;
     const storedEmail = window.localStorage.getItem('emailForSignIn');
-    if (isSignInWithEmailLink(auth, window.location.href)) {
+    if (isSignInWithEmailLink(auth, window.location.href) && storedEmail) {
       const result = await signInWithEmailLink(auth, storedEmail, window.location.href);
       window.localStorage.removeItem('emailForSignIn');
       await saveUser(result.user);
@@ -89,8 +100,7 @@ export default function LoginPage() {
     }
   };
 
-  // Check for magic link sign-in
-  useState(() => {
+  useEffect(() => {
     checkEmailSignIn();
   }, []);
 
@@ -106,7 +116,6 @@ export default function LoginPage() {
         Sign in with Google
       </button>
 
-      {/* Divider */}
       <div className="border-t pt-4 text-center text-sm text-slate-500">or</div>
 
       {/* Phone Sign In */}
@@ -144,7 +153,6 @@ export default function LoginPage() {
         <div id="recaptcha-container"></div>
       </div>
 
-      {/* Divider */}
       <div className="border-t pt-4 text-center text-sm text-slate-500">or</div>
 
       {/* Email Sign In */}

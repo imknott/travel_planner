@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/lib/firebaseClient';
 import ThemeToggle from '@/components/themeToggle';
 import Link from 'next/link';
 
@@ -68,7 +67,7 @@ export default function Navbar() {
                     </Link>
                     <button
                       onClick={() => {
-                        signOut(auth);
+                        signOut(getAuth());
                         setDropdownOpen(false);
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -109,7 +108,7 @@ export default function Navbar() {
               <>
                 <Link href="/profile" className="block text-sm font-medium text-blue-600">Profile</Link>
                 <button
-                  onClick={() => signOut(auth)}
+                  onClick={() => signOut(getAuth())}
                   className="block text-sm font-medium text-blue-600"
                 >
                   Sign out
