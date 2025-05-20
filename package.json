@@ -9,8 +9,7 @@
     "lint": "next lint",
     "check-keys": "node src/scripts/checkMissingTranslationKeys.js",
     "translate-missing": "node src/scripts/autoTranslateMissingKeys.js",
-    "translate-quiz": "node src/scripts/translate-quiz.mjs",
-    "postinstall": "npx playwright install chromium"
+    "translate-quiz": "node src/scripts/translate-quiz.mjs"
   },
   "dependencies": {
     "@google/genai": "^0.13.0",
@@ -28,7 +27,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.15.17",
     "eslint": "^9",
