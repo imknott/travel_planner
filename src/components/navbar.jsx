@@ -32,18 +32,7 @@ export default function Navbar() {
           >
             Flights
           </Link>
-          <Link
-            href="/hotels"
-            className={`text-sm font-medium hover:text-blue-600 transition ${pathname.startsWith('/hotels') ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'}`}
-          >
-            Hotels
-          </Link>
-          <Link
-            href="/cars"
-            className={`text-sm font-medium hover:text-blue-600 transition ${pathname.startsWith('/cars') ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'}`}
-          >
-            Cars
-          </Link>
+
           <ThemeToggle />
 
           {/* Auth buttons */}
