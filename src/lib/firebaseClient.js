@@ -1,3 +1,10 @@
+'use client';
+
+// 🚫 Ensure this file is not used server-side
+if (typeof window === 'undefined') {
+  throw new Error('🚫 firebaseClient.js should only be imported in client components');
+}
+
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
