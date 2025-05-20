@@ -1,9 +1,9 @@
 'use client';
 
-// 🚫 Ensure this file is not used server-side
 if (typeof window === 'undefined') {
-  throw new Error('🚫 firebaseClient.js should only be imported in client components');
+  throw new Error('🔥 firebaseClient.js used on the server (build-time leak)');
 }
+
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';

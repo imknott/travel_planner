@@ -1,8 +1,9 @@
 import ClientOnlyLayout from '@/components/ClientOnlyLayout';
-import Navbar from '@/components/navbar';
+import dynamic from 'next/dynamic';
 import Footer from '@/components/footer';
 import '@/app/globals.css';
 
+const Navbar = dynamic(() => import('@/components/navbar'), { ssr: false });
 export default function LocaleLayout({ children }) {
   return (
     <html lang="en" className="dark">
