@@ -1,7 +1,7 @@
 'use client';
 
 import { signInWithPopup } from 'firebase/auth';
-import { auth, provider, db } from '/lib/firebaseClient';
+import { auth, provider, db } from '@/lib/firebaseClient';
 
 
 export default function SignInButton() {
