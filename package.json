@@ -6,10 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start -p 8080",
-    "lint": "next lint",
-    "check-keys": "node src/scripts/checkMissingTranslationKeys.js",
-    "translate-missing": "node src/scripts/autoTranslateMissingKeys.js",
-    "translate-quiz": "node src/scripts/translate-quiz.mjs"
+    "lint": "next lint"
   },
   "dependencies": {
     "@google/genai": "^0.13.0",
