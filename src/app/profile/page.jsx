@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
-  const interestOptions = ['Beaches', 'Hiking', 'Food', 'Nightlife', 'Museums', 'Road Trips'];
+  const interestOptions = ['Beaches', 'Hiking', 'Food', 'Nightlife', 'Museums', 'Road Trips','Extreme Sports', 'Collector','Shopping', 'Relaxation'];
 
   useEffect(() => {
     if (!user) return;

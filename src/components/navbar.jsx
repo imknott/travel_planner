@@ -90,8 +90,6 @@ export default function Navbar() {
       {menuOpen && (
         <div className="sm:hidden px-4 pb-4 space-y-2">
           <Link href="/" className="block text-sm font-medium text-gray-800 dark:text-white">Flights</Link>
-          <Link href="/hotels" className="block text-sm font-medium text-gray-800 dark:text-white">Hotels</Link>
-          <Link href="/cars" className="block text-sm font-medium text-gray-800 dark:text-white">Cars</Link>
           {!loading && (
             user ? (
               <>
