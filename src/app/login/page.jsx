@@ -1,7 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-
 import { useState, useEffect } from 'react';
 import {
   getAuth,
@@ -15,12 +14,6 @@ import {
   PhoneAuthProvider,
   signInWithCredential,
 } from 'firebase/auth';
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc
-} from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 const provider = new GoogleAuthProvider();
@@ -33,30 +26,19 @@ export default function LoginPage() {
   const [step, setStep] = useState('login');
   const router = useRouter();
   const auth = getAuth();
-  const db = getFirestore();
 
-  const saveUser = async (user) => {
-    const ref = doc(db, 'users', user.uid);
-    const existing = await getDoc(ref);
-    if (!existing.exists()) {
-      await setDoc(ref, {
-        uid: user.uid,
-        email: user.email || '',
-        name: user.displayName || '',
-        phone: user.phoneNumber || '',
-        homeAirport: '',
-        interests: [],
-        sex: '',
-        genderIdentity: '',
-        bucketListDestinations: [],
-        countriesTraveled: [],
-      });
-    }
+  const callLoginRoute = async (user) => {
+    const token = await user.getIdToken();
+    await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: token }),
+    });
   };
 
   const handleGoogle = async () => {
     const result = await signInWithPopup(auth, provider);
-    await saveUser(result.user);
+    await callLoginRoute(result.user);
     router.push('/profile');
   };
 
@@ -75,7 +57,7 @@ export default function LoginPage() {
   const verifySmsCode = async () => {
     const cred = PhoneAuthProvider.credential(verificationId, smsCode);
     const result = await signInWithCredential(auth, cred);
-    await saveUser(result.user);
+    await callLoginRoute(result.user);
     router.push('/profile');
   };
 
@@ -91,13 +73,11 @@ export default function LoginPage() {
   };
 
   const checkEmailSignIn = async () => {
-    const auth = getAuth();
-    if (typeof window === 'undefined') return;
     const storedEmail = window.localStorage.getItem('emailForSignIn');
     if (isSignInWithEmailLink(auth, window.location.href) && storedEmail) {
       const result = await signInWithEmailLink(auth, storedEmail, window.location.href);
       window.localStorage.removeItem('emailForSignIn');
-      await saveUser(result.user);
+      await callLoginRoute(result.user);
       router.push('/profile');
     }
   };

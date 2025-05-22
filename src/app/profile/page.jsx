@@ -1,19 +1,23 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AirportInput from '@/components/AirportInput';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
-  const interestOptions = ['Beaches', 'Hiking', 'Food', 'Nightlife', 'Museums', 'Road Trips','Extreme Sports', 'Collector','Shopping', 'Relaxation'];
+  const router = useRouter();
+  const interestOptions = [
+    'Beaches', 'Hiking', 'Food', 'Nightlife', 'Museums',
+    'Road Trips', 'Extreme Sports', 'Collector', 'Shopping', 'Relaxation'
+  ];
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +53,11 @@ export default function ProfilePage() {
     alert('Profile saved!');
   };
 
+  const handleLogout = async () => {
+    await signOut(getAuth());
+    router.push('/');
+  };
+
   if (!form) return (
     <ProtectedRoute>
       <div className="pt-24 text-center">Loading profile...</div>
@@ -58,7 +67,10 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="max-w-2xl mx-auto mt-24 p-6 bg-white dark:bg-slate-800 rounded shadow space-y-4">
-        <h1 className="text-2xl font-bold">Edit Your Profile</h1>
+        <h1 className="text-2xl font-bold">
+          Welcome{form.name ? `, ${form.name}` : ''} 👋
+        </h1>
+
 
         <input
           className="w-full p-2 border rounded dark:bg-slate-700"
@@ -100,11 +112,10 @@ export default function ProfilePage() {
               <button
                 key={tag}
                 onClick={() => toggleInterest(tag)}
-                className={`px-3 py-1 rounded-full text-sm ${
-                  form.interests?.includes(tag)
+                className={`px-3 py-1 rounded-full text-sm ${form.interests?.includes(tag)
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-600 text-black dark:text-white'
-                }`}
+                  }`}
               >
                 {tag}
               </button>
@@ -136,6 +147,13 @@ export default function ProfilePage() {
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Profile'}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="w-full mt-2 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
+        >
+          Sign Out
         </button>
       </div>
     </ProtectedRoute>
