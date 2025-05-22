@@ -25,7 +25,6 @@ export default function LoginPage() {
   const [verificationId, setVerificationId] = useState(null);
   const [step, setStep] = useState('login');
   const router = useRouter();
-  const auth = getAuth();
 
   const callLoginRoute = async (user) => {
     const token = await user.getIdToken();
@@ -37,12 +36,14 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
+    const auth = getAuth(); // ✅ now inside function
     const result = await signInWithPopup(auth, provider);
     await callLoginRoute(result.user);
     router.push('/profile');
   };
 
   const handlePhone = async () => {
+    const auth = getAuth();
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
         size: 'invisible',
@@ -55,6 +56,7 @@ export default function LoginPage() {
   };
 
   const verifySmsCode = async () => {
+    const auth = getAuth();
     const cred = PhoneAuthProvider.credential(verificationId, smsCode);
     const result = await signInWithCredential(auth, cred);
     await callLoginRoute(result.user);
@@ -62,6 +64,7 @@ export default function LoginPage() {
   };
 
   const sendEmailLink = async () => {
+    const auth = getAuth();
     const actionCodeSettings = {
       url: `${window.location.origin}/login`,
       handleCodeInApp: true,
@@ -73,6 +76,7 @@ export default function LoginPage() {
   };
 
   const checkEmailSignIn = async () => {
+    const auth = getAuth();
     const storedEmail = window.localStorage.getItem('emailForSignIn');
     if (isSignInWithEmailLink(auth, window.location.href) && storedEmail) {
       const result = await signInWithEmailLink(auth, storedEmail, window.location.href);
@@ -90,7 +94,6 @@ export default function LoginPage() {
     <div className="max-w-xl mx-auto mt-24 p-6 bg-white dark:bg-slate-800 rounded shadow space-y-6">
       <h1 className="text-2xl font-bold text-center">Sign in</h1>
 
-      {/* Google Sign In */}
       <button
         onClick={handleGoogle}
         className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
@@ -100,7 +103,6 @@ export default function LoginPage() {
 
       <div className="border-t pt-4 text-center text-sm text-slate-500">or</div>
 
-      {/* Phone Sign In */}
       <div className="space-y-3">
         <input
           type="tel"
@@ -137,7 +139,6 @@ export default function LoginPage() {
 
       <div className="border-t pt-4 text-center text-sm text-slate-500">or</div>
 
-      {/* Email Sign In */}
       <div className="space-y-3">
         <input
           type="email"
