@@ -28,14 +28,33 @@ export default function Navbar() {
         <div className="hidden sm:flex items-center space-x-6">
           <Link
             href="/"
-            className={`text-sm font-medium hover:text-blue-600 transition ${pathname === '/' ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'}`}
+            className={`text-sm font-medium hover:text-blue-600 transition ${
+              pathname === '/' ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'
+            }`}
           >
             Flights
           </Link>
 
+          <Link
+            href="/hotels"
+            className={`text-sm font-medium hover:text-blue-600 transition ${
+              pathname.startsWith('/hotels') ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            Hotels
+          </Link>
+
+          <Link
+            href="/cars"
+            className={`text-sm font-medium hover:text-blue-600 transition ${
+              pathname.startsWith('/cars') ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            Cars
+          </Link>
+
           <ThemeToggle />
 
-          {/* Auth buttons */}
           {!loading && (
             user ? (
               <div className="relative">
@@ -77,7 +96,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile menu toggle */}
         <button
           className="sm:hidden text-gray-700 dark:text-white"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -86,10 +105,12 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile nav */}
+      {/* Mobile menu dropdown */}
       {menuOpen && (
         <div className="sm:hidden px-4 pb-4 space-y-2">
           <Link href="/" className="block text-sm font-medium text-gray-800 dark:text-white">Flights</Link>
+          <Link href="/hotels" className="block text-sm font-medium text-gray-800 dark:text-white">Hotels</Link>
+          <Link href="/cars" className="block text-sm font-medium text-gray-800 dark:text-white">Cars</Link>
           {!loading && (
             user ? (
               <>
