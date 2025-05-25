@@ -1,7 +1,9 @@
 'use client';
+
 import { usePathname } from 'next/navigation';
-import Navbar from '@/components/navbar';
 import { AuthProvider } from '@/context/AuthContext';
+import NavbarBase from '@/components/NavbarBase';
+import NavbarWithAuth from '@/components/NavbarWithAuth';
 
 export default function ClientOnlyLayout({ children }) {
   const pathname = usePathname();
@@ -9,8 +11,15 @@ export default function ClientOnlyLayout({ children }) {
 
   return (
     <>
-      <Navbar />
-      {isPublic ? children : <AuthProvider>{children}</AuthProvider>}
+      <NavbarBase />
+      {isPublic ? (
+        children
+      ) : (
+        <AuthProvider>
+          <NavbarWithAuth />
+          {children}
+        </AuthProvider>
+      )}
     </>
   );
 }
