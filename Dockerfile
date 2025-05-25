@@ -1,4 +1,3 @@
-# First stage
 FROM node:18 AS builder
 WORKDIR /app
 
@@ -16,6 +15,7 @@ RUN npm install
 COPY . .
 
 # Build with env vars in place
+RUN rm -rf .next
 RUN npm run build
 
 # Second stage
@@ -25,8 +25,6 @@ WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-RUN npm install --omit=dev
 
 ENV NODE_ENV=production
 ENV PORT=8080

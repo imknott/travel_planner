@@ -1,24 +1,9 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import {
-  getAuth,
-  signInWithPopup,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  signInWithEmailLink,
-  isSignInWithEmailLink,
-  sendSignInLinkToEmail,
-  GoogleAuthProvider,
-  PhoneAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
-const provider = new GoogleAuthProvider();
-
-export default function LoginPage() {
+export default function LoginClient() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [smsCode, setSmsCode] = useState('');
@@ -36,18 +21,20 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
-    const auth = getAuth(); // ✅ now inside function
+    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     await callLoginRoute(result.user);
     router.push('/profile');
   };
 
   const handlePhone = async () => {
+    const { getAuth, signInWithPhoneNumber, RecaptchaVerifier } = await import('firebase/auth');
     const auth = getAuth();
+
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-        size: 'invisible',
-      }, auth);
+      window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
     }
 
     const confirmation = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
@@ -56,6 +43,7 @@ export default function LoginPage() {
   };
 
   const verifySmsCode = async () => {
+    const { getAuth, PhoneAuthProvider, signInWithCredential } = await import('firebase/auth');
     const auth = getAuth();
     const cred = PhoneAuthProvider.credential(verificationId, smsCode);
     const result = await signInWithCredential(auth, cred);
@@ -64,6 +52,7 @@ export default function LoginPage() {
   };
 
   const sendEmailLink = async () => {
+    const { getAuth, sendSignInLinkToEmail } = await import('firebase/auth');
     const auth = getAuth();
     const actionCodeSettings = {
       url: `${window.location.origin}/login`,
@@ -76,6 +65,7 @@ export default function LoginPage() {
   };
 
   const checkEmailSignIn = async () => {
+    const { getAuth, isSignInWithEmailLink, signInWithEmailLink } = await import('firebase/auth');
     const auth = getAuth();
     const storedEmail = window.localStorage.getItem('emailForSignIn');
     if (isSignInWithEmailLink(auth, window.location.href) && storedEmail) {
@@ -94,10 +84,7 @@ export default function LoginPage() {
     <div className="max-w-xl mx-auto mt-24 p-6 bg-white dark:bg-slate-800 rounded shadow space-y-6">
       <h1 className="text-2xl font-bold text-center">Sign in</h1>
 
-      <button
-        onClick={handleGoogle}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-      >
+      <button onClick={handleGoogle} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
         Sign in with Google
       </button>
 
@@ -111,10 +98,7 @@ export default function LoginPage() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
-        <button
-          onClick={handlePhone}
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-        >
+        <button onClick={handlePhone} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
           Send SMS Code
         </button>
         {step === 'verifyingSMS' && (
@@ -126,10 +110,7 @@ export default function LoginPage() {
               value={smsCode}
               onChange={(e) => setSmsCode(e.target.value)}
             />
-            <button
-              onClick={verifySmsCode}
-              className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-            >
+            <button onClick={verifySmsCode} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
               Verify & Sign In
             </button>
           </>
@@ -147,10 +128,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button
-          onClick={sendEmailLink}
-          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
-        >
+        <button onClick={sendEmailLink} className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
           Send Magic Link
         </button>
         {step === 'emailSent' && (

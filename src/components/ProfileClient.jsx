@@ -1,19 +1,17 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
-import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AirportInput from '@/components/AirportInput';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
-export default function ProfilePage() {
+export default function ProfileClient() {
   const { user } = useAuth();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+
   const interestOptions = [
     'Beaches', 'Hiking', 'Food', 'Nightlife', 'Museums',
     'Road Trips', 'Extreme Sports', 'Collector', 'Shopping', 'Relaxation'
@@ -21,12 +19,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
+
+    (async () => {
+      const { getFirestore, doc, getDoc } = await import('firebase/firestore');
       const db = getFirestore();
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (snap.exists()) setForm(snap.data());
-    };
-    fetch();
+    })();
   }, [user]);
 
   const toggleInterest = (tag) => {
@@ -47,6 +46,7 @@ export default function ProfilePage() {
   const handleSubmit = async () => {
     if (!user) return;
     setSaving(true);
+    const { getFirestore, doc, setDoc } = await import('firebase/firestore');
     const db = getFirestore();
     await setDoc(doc(db, 'users', user.uid), form, { merge: true });
     setSaving(false);
@@ -54,15 +54,18 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
+    const { getAuth, signOut } = await import('firebase/auth');
     await signOut(getAuth());
     router.push('/');
   };
 
-  if (!form) return (
-    <ProtectedRoute>
-      <div className="pt-24 text-center">Loading profile...</div>
-    </ProtectedRoute>
-  );
+  if (!form) {
+    return (
+      <ProtectedRoute>
+        <div className="pt-24 text-center">Loading profile...</div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -70,7 +73,6 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold">
           Welcome{form.name ? `, ${form.name}` : ''} 👋
         </h1>
-
 
         <input
           className="w-full p-2 border rounded dark:bg-slate-700"
@@ -112,10 +114,11 @@ export default function ProfilePage() {
               <button
                 key={tag}
                 onClick={() => toggleInterest(tag)}
-                className={`px-3 py-1 rounded-full text-sm ${form.interests?.includes(tag)
+                className={`px-3 py-1 rounded-full text-sm ${
+                  form.interests?.includes(tag)
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-200 dark:bg-slate-600 text-black dark:text-white'
-                  }`}
+                }`}
               >
                 {tag}
               </button>
