@@ -12,12 +12,18 @@ export default function LoginClient() {
   const router = useRouter();
 
   const callLoginRoute = async (user) => {
-    const token = await user.getIdToken();
-    await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: token }),
-    });
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      });
+
+      if (!res.ok) throw new Error('Failed to login');
+    } catch (err) {
+      console.error('Login route failed:', err);
+    }
   };
 
   const handleGoogle = async () => {
