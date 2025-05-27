@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
-import SetupWizard from '@/components/SetupWizard';
 import FlightCard from '@/components/FlightCard';
 import AttractionCard from '@/components/AttractionCard';
 import TravelInsuranceAd from '@/components/TravelInsuranceAd';
@@ -83,10 +82,6 @@ export default function ResultsPage() {
         </div>
       </div>
     );
-  }
-
-  if (!profileExists) {
-    return <SetupWizard email={email} onComplete={() => setProfileExists(true)} />;
   }
 
   if (loading) {
