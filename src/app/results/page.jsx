@@ -4,8 +4,6 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebaseClient';
 import FlightCard from '@/components/FlightCard';
 import AttractionCard from '@/components/AttractionCard';
 import TravelInsuranceAd from '@/components/TravelInsuranceAd';
@@ -15,12 +13,8 @@ export default function ResultsPage() {
   const [results, setResults] = useState([]);
   const [routeInfo, setRouteInfo] = useState({});
   const [loading, setLoading] = useState(true);
-  const [profileExists, setProfileExists] = useState(null);
-  const [email, setEmail] = useState('');
-  const [emailSubmitted, setEmailSubmitted] = useState(false);
   const [budget, setBudget] = useState(null);
 
-  // Load search results
   useEffect(() => {
     const stored = sessionStorage.getItem('flighthacked_result');
     if (!stored) {
@@ -47,42 +41,8 @@ export default function ResultsPage() {
     }
   }, [router]);
 
-  const handleEmailSubmit = async () => {
-    if (!email) return;
-    const ref = doc(db, 'users', email);
-    const snap = await getDoc(ref);
-    setProfileExists(snap.exists());
-    setEmailSubmitted(true);
-  };
-
   const formatMoney = (amount) =>
     `$${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}`;
-
-  if (!emailSubmitted) {
-    return (
-      <div className="min-h-screen pt-24 px-4 max-w-xl mx-auto">
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-2">Welcome to FlightHacked ✈️</h2>
-          <p className="text-sm mb-4">
-            Before we show your results, have you searched with us before? Enter your email so I can check your travel profile:
-          </p>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full border px-3 py-2 rounded dark:bg-slate-700 dark:text-white"
-          />
-          <button
-            onClick={handleEmailSubmit}
-            className="mt-4 w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

@@ -43,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-200">
       {/* Hero Section with Background Video */}
       <section className="relative h-[75vh] flex items-center justify-center px-2 overflow-hidden">
         {/* Video (only on desktop) */}
@@ -56,7 +56,7 @@ export default function Home() {
             playsInline
             preload="auto"
           >
-            <source src="/images/2547258-uhd_3840_2160_30fps.mp4" type="video/mp4" />
+            <source src="/images/2547258-Uhd 3840 2160 30Fps.webm" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -68,7 +68,7 @@ export default function Home() {
         />
 
         {/* Overlay for readability */}
-        <div className="absolute inset-0 bg-black/60 dark:bg-black/70 z-10" />
+        <div className="absolute inset-0  z-10" />
 
         {/* Foreground content */}
         <div className="relative z-20 p-8 rounded-lg shadow-lg text-center w-full max-w-2xl mt-24 text-white">
@@ -85,7 +85,7 @@ export default function Home() {
             />
             <button
               onClick={handleSearch}
-              className={`bg-[#007BFF] hover:bg-[#005fcc] text-white font-semibold px-4 py-3 rounded transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-[#519d58cc] hover:bg-[#91eabc] text-white font-semibold px-4 py-3 rounded transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={loading}
             >
               {loading ? 'Searching...' : 'Search travel deals'}
@@ -96,16 +96,16 @@ export default function Home() {
 
 
       {/* Feature Section */}
-      <section className="bg-slate-100 dark:bg-slate-800 py-12 px-4 text-center">
+      <section className="bg-white/80 py-12 px-4 text-center">
         <div className="max-w-4xl mx-auto">
           <p className="text-xl font-medium mb-6">
-            Find cheap flights, hotels, and car rentals in seconds — just tell us what you want.
+            We help build you the perfect travel itinerary! With the power of machine learning we personalize your results.
           </p>
           <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-700 dark:text-slate-200">
             {[
               'One search, all options',
               'AI-powered travel planning',
-              'Flight + Hotel + Car bundles',
+              'Flight + Hotel bundles',
               'Price-aware, date-flexible',
               'Works worldwide',
             ].map((feature, index) => (

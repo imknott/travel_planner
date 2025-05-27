@@ -5,7 +5,7 @@ import { FaInstagram, FaGithub, FaEnvelope } from 'react-icons/fa';
 export default function Footer() {
   
   return (
-    <footer className="text-center text-sm text-gray-500 mt-10 py-4 flex flex-col items-center gap-2">
+    <footer className=" bg-white/80 text-center text-sm text-gray-500 mt-10 py-4 flex flex-col items-center gap-2">
       <div>
         © {new Date().getFullYear()} flighthacked.com
       </div>
