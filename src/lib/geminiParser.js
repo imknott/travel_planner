@@ -1,7 +1,7 @@
 // lib/geminiParser.js
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 const systemInstructions = `
 You are an AI assistant that extracts user travel preferences into structured JSON.
