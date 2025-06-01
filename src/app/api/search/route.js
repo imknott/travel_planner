@@ -33,53 +33,6 @@ async function getAmadeusAccessToken() {
   return data.access_token;
 }
 
-async function enrichAttractionWithImage(name) {
-  const placeRes = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(name)}&key=${process.env.GOOGLE_PLACES_KEY}`);
-  const placeData = await placeRes.json();
-  const place = placeData.results?.[0];
-  if (!place) return { name, description: '', image: null };
-
-  const photoRef = place.photos?.[0]?.photo_reference;
-  const image = photoRef
-    ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoRef}&key=${process.env.GOOGLE_PLACES_KEY}`
-    : null;
-
-  return { name, image };
-}
-
-
-async function getAttractions(destination) {
-  const prompt = `List the top 3 popular tourist attractions in ${destination}, in short bullet form.`;
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: prompt,
-  });
-
-  const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const rawLines = text
-    .split('\n')
-    .map(line => line.replace(/^[-•\d\.\s]+/, '').trim())
-    .filter(Boolean)
-    .slice(0, 3);
-
-  const enriched = await Promise.all(
-    rawLines.map(async (line) => {
-      const [namePart, ...descParts] = line.split(':');
-      const name = namePart.trim();
-      const description = descParts.join(':').trim();
-      const imageData = await enrichAttractionWithImage(name);
-      return {
-        name,
-        description,
-        image: imageData.image,
-      };
-    })
-  );
-
-  return enriched;
-}
-
-
 async function getHotelOffers(city, checkInDate, checkOutDate, adults) {
   const token = await getAmadeusAccessToken();
 
@@ -286,7 +239,6 @@ Checked Bags: <true|false>
             checkedBags,
             flights: [],
             hotels: [],
-            attractions: [],
             totalCost: 0,
             perPersonCost: 0,
           };
@@ -366,10 +318,6 @@ Checked Bags: <true|false>
                 : 0;
               console.log('🏨 Hotels:', entry.hotels);
             }
-
-            // 📍 Attractions
-            entry.attractions = await getAttractions(destination);
-            console.log('📍 Attractions:', entry.attractions);
 
             const total = flightCost + hotelCost;
             entry.totalCost = Math.round(total);

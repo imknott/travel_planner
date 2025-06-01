@@ -66,7 +66,6 @@ export default function ResultsPage() {
           checkedBags,
           flights,
           hotels,
-          attractions,
           totalCost,
           perPersonCost,
         } = pkg;
@@ -110,23 +109,6 @@ export default function ResultsPage() {
                 </p>
               </div>
             )}
-
-            {attractions?.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-semibold mb-2">Top attractions:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {attractions.map((item, i) => (
-                    <AttractionCard
-                      key={i}
-                      name={item.name}
-                      image={item.image}
-                      description={item.description}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="mt-4 text-sm text-slate-700 dark:text-slate-300">
               <strong>Total cost:</strong> {formatMoney(totalCost)} ·{' '}
               <strong>Per person:</strong> {formatMoney(perPersonCost)}
